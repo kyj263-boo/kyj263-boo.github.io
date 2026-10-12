@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinePick | 영화 드라마 추천</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 32px;
+      background: #111827;
+      color: #f9fafb;
+      font-family: Arial, sans-serif;
+    }
+
+    header { max-width: 1000px; margin: auto; }
+
+    h1 { color: #facc15; font-size: 36px; }
+
+    .subtitle { color: #cbd5e1; }
+
+    .filters { margin: 28px 0; }
+
+    button {
+      padding: 10px 16px;
+      margin: 4px;
+      border: 0;
+      border-radius: 20px;
+      cursor: pointer;
+      background: #374151;
+      color: white;
+    }
+
+    button:hover, button.active {
+      background: #facc15;
+      color: #111827;
+    }
+
+    .movies {
+      max-width: 1000px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      padding: 16px;
+      border-radius: 14px;
+      background: #1f2937;
+    }
+
+    .poster {
+      height: 150px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #312e81, #be185d);
+      font-size: 54px;
+    }
+
+    .card p { color: #cbd5e1; }
+
+    footer {
+      max-width: 1000px;
+      margin: 50px auto 0;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎬 CinePick</h1>
+    <h2>오늘 밤, 어떤 이야기에 빠져볼까요?</h2>
+    <p class="subtitle">
+      나에게 맞는 영화와 드라마를 찾아보세요.
+    </p>
+
+    <div class="filters">
+      <button class="active" onclick="filterMovies('전체', this)">전체</button>
+      <button onclick="filterMovies('로맨스', this)">로맨스</button>
+      <button onclick="filterMovies('스릴러', this)">스릴러</button>
+      <button onclick="filterMovies('코미디', this)">코미디</button>
+      <button onclick="filterMovies('액션', this)">액션</button>
+    </div>
+  </header>
+
+  <main class="movies" id="movies"></main>
+
+  <footer>
+    <p>© 2026 CinePick · 나만의 영화와 드라마 발견하기</p>
+    <p>※ 작품 카드는 추천 홈페이지의 예시 데이터입니다.</p>
+  </footer>
+
+  <script>
+    const data = [
+      { title: "멜로 영화 추천", genre: "로맨스", icon: "💗",
+        desc: "설렘과 감동을 느끼고 싶을 때" },
+      { title: "미스터리 드라마", genre: "스릴러", icon: "🔎",
+        desc: "긴장감 넘치는 이야기를 원할 때" },
+      { title: "코미디 영화 추천", genre: "코미디", icon: "😂",
+        desc: "가볍게 웃고 싶을 때" },
+      { title: "액션 영화 추천", genre: "액션", icon: "💥",
+        desc: "시원한 액션을 즐기고 싶을 때" },
+      { title: "청춘 로맨스", genre: "로맨스", icon: "🌸",
+        desc: "풋풋한 사랑 이야기를 보고 싶을 때" },
+      { title: "범죄 미스터리", genre: "스릴러", icon: "🕵️",
+        desc: "사건의 진실을 추리하고 싶을 때" }
+    ];
+
+    function filterMovies(genre, button) {
+      const filtered = genre === "전체"
+        ? data
+        : data.filter(movie => movie.genre === genre);
+
+      document.querySelectorAll(".filters button").forEach(btn => {
+        btn.classList.remove("active");
+      });
+      button.classList.add("active");
+
+      document.getElementById("movies").innerHTML =
+        filtered.map(movie => `
+          <article class="card">
+            <div class="poster">${movie.icon}</div>
+            <h3>${movie.title}</h3>
+            <p>${movie.genre}</p>
+            <p>${movie.desc}</p>
+          </article>
+        `).join("");
+    }
+
+    filterMovies("전체", document.querySelector(".filters button"));
+  </script>
+</body>
+</html>
