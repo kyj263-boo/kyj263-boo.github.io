@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>포켓 모험</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#22313f;--panel:#f4f7f2;--red:#e0483e;--gold:#f2b632}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#16302d;font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--ink)}
+.game{position:relative;width:min(640px,100vw);background:var(--ink);border:4px solid var(--ink);border-radius:18px;overflow:hidden;box-shadow:0 10px 0 #0c1a18}
+button{font:inherit;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:10px;padding:9px 8px;box-shadow:0 4px 0 var(--ink);cursor:pointer}
+button:hover:not(:disabled){transform:translateY(-2px)}
+button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button:disabled{opacity:.4;cursor:default}
+small{display:block;font-size:11px;opacity:.7}
+.top{display:flex;gap:18px;align-items:center;padding:8px 14px;color:#e8efe9;font-size:14px}
+.top .pt{margin-left:auto}.top i{font-style:normal;margin-left:4px;font-size:18px}.top i.x{opacity:.3;filter:grayscale(1)}
+.scene{position:relative;height:290px;background:linear-gradient(#bfe3ee 0 52%,#79b862 52% 100%);border-block:4px solid var(--ink);overflow:hidden}
+.mon{position:absolute;font-size:84px;line-height:1;user-select:none}
+.mon.e{right:13%;top:56px}.mon.p{left:11%;bottom:34px}
+.pad{position:absolute;width:150px;height:30px;border-radius:50%;background:#4d8f47}
+.pad.e{right:8%;top:132px}.pad.p{left:6%;bottom:22px;width:170px}
+.hud{position:absolute;background:var(--panel);border:3px solid var(--ink);border-radius:10px;padding:6px 10px;min-width:160px;font-size:15px}
+.hud.e{left:12px;top:12px}.hud.p{right:12px;bottom:12px}
+.hud span{font-size:13px;margin-left:4px}
+.bar{height:9px;background:#cfd8d2;border-radius:5px;overflow:hidden;margin:4px 0}
+.bar i{display:block;height:100%;transition:width .5s}
+.msg{min-height:62px;margin:10px;padding:12px 14px;background:var(--panel);border:3px solid #fff;border-radius:10px;font-size:18px;line-height:1.4}
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:2px 10px 14px}
+.menu.off{pointer-events:none;opacity:.5}
+.menu .ball{background:#ffd9d5}
+.title{padding:26px 22px 30px;color:#e8efe9;text-align:center}
+.title h1{font-size:46px;margin:0 0 6px;color:var(--gold)}
+.title p{margin:0 0 20px;font-size:18px}
+.starters{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.st{font-size:20px;padding:12px}.st span{display:block;font-size:56px}
+.modal{position:absolute;inset:0;background:rgba(15,25,35,.92);display:flex;flex-direction:column;gap:10px;justify-content:center;padding:24px;color:#fff;z-index:5}
+.modal h3{margin:0 0 4px;font-size:22px;font-weight:400}
+.modal button{text-align:left;font-size:17px}
+@media(max-width:420px){.mon{font-size:68px}.hud{min-width:140px}}
+</style>
+</head>
+<body>
+<main class="game" id="app"></main>
+<script>
+const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms)),R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const A=(el,k,o)=>el.animate(k,matchMedia('(prefers-reduced-motion:reduce)').matches?{...o,duration:1,iterations:1}:o);
+const T={불꽃:{풀:2,물:.5,불꽃:.5},물:{불꽃:2,풀:.5,물:.5},풀:{물:2,불꽃:.5,풀:.5},전기:{물:2,풀:.5,전기:.5},노말:{}};
+const MV={몸통박치기:[40,'노말'],전광석화:[45,'노말'],불꽃세례:[55,'불꽃'],물대포:[55,'물'],덩굴채찍:[55,'풀'],전기쇼크:[55,'전기']};
+const SP=[
+{n:'파이리',e:'🦎',t:'불꽃',h:39,a:52,m:['몸통박치기','불꽃세례']},
+{n:'꼬부기',e:'🐢',t:'물',h:44,a:48,m:['몸통박치기','물대포']},
+{n:'이상해씨',e:'🌱',t:'풀',h:45,a:49,m:['몸통박치기','덩굴채찍']},
+{n:'피카츄',e:'⚡',t:'전기',h:35,a:55,m:['몸통박치기','전기쇼크']},
+{n:'꼬렛',e:'🐀',t:'노말',h:30,a:56,m:['몸통박치기','전광석화']},
+{n:'구구',e:'🐦',t:'노말',h:40,a:45,m:['몸통박치기','전광석화']},
+{n:'고라파덕',e:'🦆',t:'물',h:50,a:52,m:['몸통박치기','물대포']},
+{n:'뚜벅쵸',e:'🌼',t:'풀',h:45,a:50,m:['몸통박치기','덩굴채찍']}];
+const mh=(s,l)=>Math.floor(s.h/4)+l*4+10;
+const mk=(s,l)=>{const m={s,l,xp:0};m.max=m.hp=mh(s,l);return m};
+let G;
+
+function start(){
+  G={party:[],act:0,balls:5,pots:3,wins:0,dex:new Set(),busy:false};
+  $('#app').innerHTML=`<div class="title"><h1>포켓 모험</h1><p>첫 번째 파트너를 골라 보세요.</p><div class="starters">${[0,1,2,3].map(i=>`<button class="st" data-i="${i}"><span>${SP[i].e}</span>${SP[i].n}<small>${SP[i].t} 타입</small></button>`).join('')}</div></div>`;
+  document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{const s=SP[b.dataset.i];G.party=[mk(s,5)];G.dex.add(s.n);battle()});
+}
+
+const hud=(m,show)=>{const r=m.hp/m.max;return `<b>${m.s.n}</b><span>Lv.${m.l}</span><div class="bar"><i style="width:${r*100}%;background:${r>.5?'#4caf50':r>.2?'#f2b632':'#e0483e'}"></i></div>${show?`<small>${m.hp} / ${m.max}</small>`:''}`};
+const upd=()=>{$('#ph').innerHTML=hud(G.party[G.act],1);$('#eh').innerHTML=hud(G.E,0)};
+const hdr=()=>{$('#top').innerHTML=`<span>연승 <b>${G.wins}</b></span><span>도감 <b>${G.dex.size}/${SP.length}</b></span><span class="pt">${G.party.map(m=>`<i class="${m.hp>0?'':'x'}">${m.s.e}</i>`).join('')}</span>`};
+const say=(t,w=750)=>{$('#msg').textContent=t;return sleep(w)};
+const ready=()=>{G.busy=false;menu();hdr();$('#menu').classList.remove('off')};
+
+function battle(){
+  const p=G.party[G.act];
+  G.E=mk(SP[R(0,SP.length-1)],Math.max(2,p.l+R(-1,1)));G.busy=true;
+  $('#app').innerHTML=`<div class="top" id="top"></div><div class="scene"><div class="hud e" id="eh"></div><div class="pad e"></div><div class="mon e" id="es">${G.E.s.e}</div><div class="pad p"></div><div class="mon p" id="ps">${p.s.e}</div><div class="hud p" id="ph"></div></div><div class="msg" id="msg"></div><div class="menu off" id="menu"></div>`;
+  upd();hdr();menu();
+  A($('#es'),[{transform:'translateX(80px)',opacity:0},{transform:'translateX(0)',opacity:1}],{duration:500});
+  say(`야생의 ${G.E.s.n}(Lv.${G.E.l})이(가) 나타났다!`,900).then(()=>say(`${p.s.n}, 어떻게 할까?`,0)).then(()=>{G.busy=false;$('#menu').classList.remove('off')});
+}
+
+function menu(){
+  const p=G.party[G.act];
+  $('#menu').innerHTML=p.s.m.map(n=>`<button data-a="m:${n}">${n}<small>${MV[n][1]} 타입 / 위력 ${MV[n][0]}</small></button>`).join('')+
+   `<button class="ball" data-a="b">몬스터볼<small>남은 개수 ${G.balls}</small></button><button data-a="p">상처약<small>체력 30 회복 / ${G.pots}개</small></button><button data-a="s">교체</button><button data-a="r">도망</button>`;
+  $('#menu').onclick=e=>{const b=e.target.closest('button');if(b&&!G.busy)act(b.dataset.a)};
+}
+
+async function act(a){
+  const p=G.party[G.act];
+  if(a==='s')return swap(false);
+  if(a==='b'&&!G.balls)return say('몬스터볼이 없다!',0);
+  if(a==='p'&&!G.pots)return say('상처약이 없다!',0);
+  if(a==='p'&&p.hp>=p.max)return say('체력이 이미 가득하다.',0);
+  G.busy=true;$('#menu').classList.add('off');
+  if(a[0]==='m'){await hit(p,G.E,a.slice(2),'p');if(G.E.hp<=0)return win();return enemyTurn()}
+  if(a==='b')return ball();
+  if(a==='p'){G.pots--;p.hp=Math.min(p.max,p.hp+30);upd();await say(`${p.s.n}의 체력이 회복되었다!`);return enemyTurn()}
+  if(Math.random()<.7){await say('무사히 도망쳤다!');return battle()}
+  await say('도망칠 수 없었다!');return enemyTurn();
+}
+
+async function hit(a,d,n,side){
+  const [pw,ty]=MV[n],as=$(side==='p'?'#ps':'#es'),ds=$(side==='p'?'#es':'#ps');
+  await say(`${a.s.n}의 ${n}!`,400);
+  const x=side==='p'?36:-36;
+  A(as,[{transform:'translateX(0)'},{transform:`translateX(${x}px)`},{transform:'translateX(0)'}],{duration:260});
+  await sleep(180);
+  const e=T[ty][d.s.t]??1,crit=Math.random()<1/12;
+  const dmg=Math.max(1,Math.floor(pw*((a.s.a/10+a.l*1.5)/(6+d.l*1.2))*.25*e*(.85+Math.random()*.3)*(crit?1.5:1)));
+  A(ds,[{opacity:1},{opacity:.2},{opacity:1},{opacity:.2},{opacity:1}],{duration:380});
+  d.hp=Math.max(0,d.hp-dmg);upd();
+  await say(`${d.s.n}에게 ${dmg}의 피해!`,500);
+  if(crit)await say('급소에 맞았다!',600);
+  if(e>1)await say('효과가 굉장했다!',700);else if(e<1)await say('효과가 별로인 듯하다...',700);
+  if(d.hp<=0){A(ds,[{transform:'translateY(0)',opacity:1},{transform:'translateY(60px)',opacity:0}],{duration:500,fill:'forwards'});await say(`${d.s.n}은(는) 쓰러졌다!`,900)}
+}
+
+async function enemyTurn(){
+  const p=G.party[G.act],E=G.E;
+  await hit(E,p,E.s.m[R(0,1)],'e');
+  if(p.hp<=0)return lose();
+  await say(`${p.s.n}, 어떻게 할까?`,0);ready();
+}
+
+async function ball(){
+  const E=G.E,es=$('#es');G.balls--;
+  await say('몬스터볼을 던졌다!',600);
+  A(es,[{transform:'rotate(0)'},{transform:'rotate(-22deg)'},{transform:'rotate(22deg)'},{transform:'rotate(0)'}],{duration:800,iterations:2});
+  await sleep(1650);
+  if(Math.random()<Math.min(.95,.2+(1-E.hp/E.max)*.65)){
+    es.style.opacity=0;G.dex.add(E.s.n);
+    await say(`신난다! ${E.s.n}을(를) 잡았다!`,900);
+    if(G.party.length<6)G.party.push(E);else await say('파티가 가득 차서 보관함으로 보냈다.',900);
+    hdr();return next();
+  }
+  await say('아깝다! 포켓몬이 빠져나왔다!');return enemyTurn();
+}
+
+async function win(){
+  const E=G.E,p=G.party[G.act];G.wins++;
+  await say(`${p.s.n}은(는) 경험치 ${E.l*12}을(를) 얻었다!`);p.xp+=E.l*12;
+  while(p.xp>=p.l*20){p.xp-=p.l*20;p.l++;const o=p.max;p.max=mh(p.s,p.l);p.hp+=p.max-o;upd();await say(`${p.s.n}의 레벨이 ${p.l}(으)로 올랐다!`,900)}
+  G.party.forEach(m=>m.hp=Math.min(m.max,m.hp+Math.ceil(m.max*.3)));upd();
+  const r=[];if(Math.random()<.6){G.balls++;r.push('몬스터볼')}if(Math.random()<.4){G.pots++;r.push('상처약')}
+  if(r.length)await say(`${r.join('과 ')}을(를) 주웠다!`);
+  hdr();next();
+}
+
+function next(){
+  $('#msg').textContent='파티가 조금 회복되었다. 다음 풀숲으로 가 볼까?';
+  const m=$('#menu');m.classList.remove('off');m.innerHTML='<button style="grid-column:1/3;font-size:18px" id="go">풀숲으로 들어가기</button>';
+  $('#go').onclick=battle;$('#go').focus();
+}
+
+async function lose(){
+  if(G.party.some(m=>m.hp>0))return swap(true);
+  await say('눈앞이 깜깜해졌다...',900);
+  $('#app').innerHTML=`<div class="title"><h1>게임 오버</h1><p>${G.wins}연승, 도감 ${G.dex.size}/${SP.length}마리를 만났어요.</p><button class="st" id="re" style="width:100%">다시 도전하기</button></div>`;
+  $('#re').onclick=start;
+}
+
+function swap(forced){
+  const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<h3>${forced?'다음 포켓몬을 고르세요':'교체할 포켓몬을 고르세요'}</h3>`+G.party.map((p,i)=>`<button data-i="${i}" ${p.hp<=0||i===G.act?'disabled':''}>${p.s.e} ${p.s.n} Lv.${p.l} (${p.hp}/${p.max})</button>`).join('')+(forced?'':'<button class="cancel">취소</button>');
+  $('#app').appendChild(m);
+  m.onclick=async e=>{
+    const b=e.target.closest('button');if(!b||b.disabled)return;
+    if(b.className==='cancel'){m.remove();return}
+    m.remove();G.busy=true;$('#menu').classList.add('off');
+    G.act=+b.dataset.i;const ps=$('#ps');ps.getAnimations().forEach(x=>x.cancel());ps.textContent=G.party[G.act].s.e;upd();hdr();
+    await say(`가라, ${G.party[G.act].s.n}!`);
+    if(forced){await say(`${G.party[G.act].s.n}, 어떻게 할까?`,0);ready()}else await enemyTurn();
+  };
+}
+start();
+</script>
+</body>
+</html>
