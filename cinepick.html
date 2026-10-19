@@ -1,138 +1,184 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CinePick | 영화 드라마 추천</title>
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      padding: 32px;
-      background: #111827;
-      color: #f9fafb;
-      font-family: Arial, sans-serif;
-    }
-
-    header { max-width: 1000px; margin: auto; }
-
-    h1 { color: #facc15; font-size: 36px; }
-
-    .subtitle { color: #cbd5e1; }
-
-    .filters { margin: 28px 0; }
-
-    button {
-      padding: 10px 16px;
-      margin: 4px;
-      border: 0;
-      border-radius: 20px;
-      cursor: pointer;
-      background: #374151;
-      color: white;
-    }
-
-    button:hover, button.active {
-      background: #facc15;
-      color: #111827;
-    }
-
-    .movies {
-      max-width: 1000px;
-      margin: auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 20px;
-    }
-
-    .card {
-      padding: 16px;
-      border-radius: 14px;
-      background: #1f2937;
-    }
-
-    .poster {
-      height: 150px;
-      display: grid;
-      place-items: center;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #312e81, #be185d);
-      font-size: 54px;
-    }
-
-    .card p { color: #cbd5e1; }
-
-    footer {
-      max-width: 1000px;
-      margin: 50px auto 0;
-      color: #9ca3af;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>교수 몰래 딴 짓 하기</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1f2d2a;--lime:#b6f23a;--coral:#ff6b57;--wood:#9c6b3f}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0f2a2e;font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#fff;user-select:none}
+.game{position:relative;width:min(640px,100vw);background:#18403f;border:4px solid #fff;border-radius:18px;overflow:hidden;box-shadow:0 10px 0 #07161a}
+.stats{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;font-size:18px}
+.stats b{color:var(--lime);font-size:22px}
+.scene{position:relative;height:380px;background:linear-gradient(#cfd8c4 0 72%,#b9a07a 72%);border-block:4px solid #fff;overflow:hidden;color:var(--ink)}
+.slide{position:absolute;left:50%;top:10px;width:60%;height:92px;transform:translateX(-50%);background:#fff;border:5px solid #6d7a70;border-radius:4px;text-align:center;padding-top:14px;font-size:20px;line-height:1.3}
+.slide small{font-size:14px;color:#c0392b}
+#prof{position:absolute;left:50%;top:40px;width:76px;margin-left:-38px;transform-origin:50% 0;transition:transform .25s;z-index:2}
+.head{width:54px;height:54px;margin:0 auto;border-radius:50%;background:#8f8f8f;position:relative}
+.face{position:absolute;left:6px;right:6px;top:14px;bottom:2px;border-radius:40%;background:#f2c6a0;opacity:0;display:flex;justify-content:center;gap:8px;padding-top:12px;transition:opacity .15s}
+.face i{width:13px;height:13px;border:2px solid #222;border-radius:50%;background:#fff}
+.warn .face,.scan .face,.walk .face,.check .face{opacity:1}
+.scan .face,.check .face{background:#f5a98d}
+.tie{width:22px;height:10px;margin:-2px auto 0;background:#c0392b;border-radius:3px;display:none}
+.warn .tie,.scan .tie,.walk .tie,.check .tie{display:block}
+.body{width:76px;height:84px;margin:0 auto;background:#5a4a42;border-radius:26px 26px 6px 6px}
+.board .body{animation:write .5s infinite alternate}
+@keyframes write{from{transform:translateX(-2px)}to{transform:translateX(2px)}}
+.bub{position:absolute;top:-34px;left:50%;margin-left:-16px;font-size:30px;display:none}
+.warn .bub,.walk .bub,.check .bub{display:block;animation:sh .15s infinite alternate}
+@keyframes sh{from{transform:translateX(-3px)}to{transform:translateX(3px)}}
+.rows{position:absolute;left:0;right:0;top:196px;display:flex;justify-content:space-around;font-size:34px}
+.desk{position:absolute;left:0;right:0;bottom:0;height:104px;background:var(--wood);border-top:6px solid #6e4824;display:grid;place-items:center}
+.screen{width:64%;height:74px;background:#fffbe8;border:4px solid var(--ink);border-radius:10px;display:grid;place-items:center;text-align:center;font-size:17px;line-height:1.1}
+.screen.hot{border-color:#e02f2f;box-shadow:0 0 0 4px rgba(224,47,47,.35)}
+.banner{position:absolute;left:50%;bottom:116px;transform:translateX(-50%);background:#fff;border:3px solid var(--ink);border-radius:20px;padding:3px 16px;font-size:16px;white-space:nowrap;z-index:3}
+.ask{position:absolute;left:50%;top:110px;transform:translateX(-50%);width:84%;background:#fff;border:4px solid var(--coral);border-radius:14px;padding:12px;text-align:center;z-index:6;display:none}
+.ask p{margin:0 0 8px;font-size:20px}
+.ask button{font:inherit;font-size:22px;background:var(--coral);color:#fff;border:3px solid var(--ink);border-radius:12px;padding:8px 26px;cursor:pointer}
+.pop{position:absolute;left:50%;bottom:150px;font-size:24px;color:#e02f2f;text-shadow:0 2px 0 #fff;pointer-events:none;white-space:nowrap;z-index:7}
+.pad{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px}
+.pad button{font:inherit;background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius:12px;padding:8px 2px;font-size:26px;box-shadow:0 5px 0 #07161a;touch-action:manipulation;cursor:pointer}
+.pad button small{display:block;font-size:12px}
+.pad button.on{background:var(--lime)}
+.pad button:active{transform:translateY(4px);box-shadow:0 1px 0 #07161a}
+.pad .study{grid-column:1/5;background:#7fd1ff;font-size:20px}
+.overlay{position:absolute;inset:0;background:rgba(15,42,46,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:10px;z-index:9}
+.overlay h1{margin:0;font-size:42px;color:var(--lime)}
+.overlay p{margin:0;font-size:18px;line-height:1.5}
+.overlay button{font:inherit;font-size:22px;margin-top:8px;padding:12px 32px;border:3px solid #fff;border-radius:14px;background:var(--coral);color:#fff;box-shadow:0 5px 0 #8a2c20;cursor:pointer}
+button:focus-visible{outline:3px solid #ffd23f;outline-offset:2px}
+@media(max-width:420px){.rows{font-size:28px}.banner{font-size:14px}}
+</style>
 </head>
 <body>
-  <header>
-    <h1>🎬 CinePick</h1>
-    <h2>오늘 밤, 어떤 이야기에 빠져볼까요?</h2>
-    <p class="subtitle">
-      나에게 맞는 영화와 드라마를 찾아보세요.
-    </p>
+<main class="game" id="app">
+  <div class="stats"><span>남은 시간 <b id="tm">75</b>초</span><span>딴짓 점수 <b id="sc">0</b></span><span id="lv">❤️❤️❤️</span></div>
+  <div class="scene" id="scene">
+    <div class="slide">경영학원론 14주차<br><small>★ 기말시험 범위 ★</small></div>
+    <div id="prof" class="board"><div class="bub" id="bub"></div><div class="head"><div class="face"><i></i><i></i></div></div><div class="tie"></div><div class="body"></div></div>
+    <div class="rows"><span>📝</span><span>😪</span><span>🙂</span><span>📝</span><span>🤓</span></div>
+    <div class="banner" id="bn">준비!</div>
+    <div class="desk"><div class="screen" id="screen"></div></div>
+    <div class="ask" id="ask"><p>거기 학생! 방금 내용 설명해 볼래요?</p><button id="askb">네?! (Space)</button></div>
+  </div>
+  <div class="pad" id="pad" onmousedown="event.preventDefault()">
+    <button data-m="phone">📱<small>폰 (1)<br><span id="s_phone">0초</span></small></button>
+    <button data-m="snack">🍙<small>간식 (2)<br><span id="s_snack">0초</span></small></button>
+    <button data-m="sleep">😴<small>졸기 (3)<br><span id="s_sleep">0초</span></small></button>
+    <button data-m="game">🎮<small>게임 (4)<br><span id="s_game">0초</span></small></button>
+    <button class="study" data-m="study">📖 공부하는 척 (Space)</button>
+  </div>
+  <div class="overlay" id="ov"></div>
+</main>
+<script>
+const $=s=>document.querySelector(s),rnd=(a,b)=>a+Math.random()*(b-a);
+const A=(el,k,o)=>el.animate(k,matchMedia('(prefers-reduced-motion:reduce)').matches?{...o,duration:1,iterations:1}:o);
+const ACT={phone:{e:'📱',n:'폰',r:6,d:.15},snack:{e:'🍙',n:'간식',r:9,d:.4},sleep:{e:'😴',n:'졸기',r:12,d:.6},game:{e:'🎮',n:'게임',r:16,d:.3}};
+const ORDER=['phone','snack','sleep','game'];
+const KEY={'1':'phone','2':'snack','3':'sleep','4':'game'};
+const TXT={board:'교수님이 판서 중. 딴짓 타임!',warn:'돌아본다! 얼른 공부하는 척!',scan:'교수님이 강의실을 둘러본다...',walk:'교수님이 걸어온다...',check:'교수님이 바로 옆에 서 있다!'};
+const BUB={warn:'❗',walk:'👣',check:'👀'};
+let S=null,raf=0,last=0,ac,shown='';
 
-    <div class="filters">
-      <button class="active" onclick="filterMovies('전체', this)">전체</button>
-      <button onclick="filterMovies('로맨스', this)">로맨스</button>
-      <button onclick="filterMovies('스릴러', this)">스릴러</button>
-      <button onclick="filterMovies('코미디', this)">코미디</button>
-      <button onclick="filterMovies('액션', this)">액션</button>
-    </div>
-  </header>
+function beep(f,d){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.07;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+const best=()=>{try{return +localStorage.getItem('sneak-best')||0}catch(e){return 0}};
+const saveBest=v=>{try{localStorage.setItem('sneak-best',v)}catch(e){}};
 
-  <main class="movies" id="movies"></main>
+function showOv(h){const ov=$('#ov');ov.innerHTML=h;ov.style.display='flex';const b=ov.querySelector('button');b.onclick=begin;b.focus()}
+function intro(){showOv(`<h1>교수 몰래 딴 짓 하기</h1><p>교수님이 칠판을 볼 때 몰래 딴짓해서 점수를 모으세요.<br>돌아보거나 다가오면 얼른 공부하는 척!</p><p>졸기와 게임은 점수가 높지만 숨기는 데 시간이 걸려요.<br>가끔 지목하면 바로 "네?!" 하고 대답해야 해요.</p><p style="font-size:15px;opacity:.8">키보드 1~4 딴짓, Space 공부하는 척 / 하트 3개로 75초 버티기</p><button>수업 시작</button>`)}
 
-  <footer>
-    <p>© 2026 CinePick · 나만의 영화와 드라마 발견하기</p>
-    <p>※ 작품 카드는 추천 홈페이지의 예시 데이터입니다.</p>
-  </footer>
+function begin(){
+  S={t:75,el:0,score:0,lives:3,mode:'study',last:'study',hide:0,ph:'board',pt:2.5,pd:2.5,exp:0,inv:0,ask:null,secs:{phone:0,snack:0,sleep:0,game:0},over:false};
+  $('#ov').style.display='none';$('#ask').style.display='none';go('board',rnd(2,3.2));beep(520,.1);
+  last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);
+}
 
-  <script>
-    const data = [
-      { title: "멜로 영화 추천", genre: "로맨스", icon: "💗",
-        desc: "설렘과 감동을 느끼고 싶을 때" },
-      { title: "미스터리 드라마", genre: "스릴러", icon: "🔎",
-        desc: "긴장감 넘치는 이야기를 원할 때" },
-      { title: "코미디 영화 추천", genre: "코미디", icon: "😂",
-        desc: "가볍게 웃고 싶을 때" },
-      { title: "액션 영화 추천", genre: "액션", icon: "💥",
-        desc: "시원한 액션을 즐기고 싶을 때" },
-      { title: "청춘 로맨스", genre: "로맨스", icon: "🌸",
-        desc: "풋풋한 사랑 이야기를 보고 싶을 때" },
-      { title: "범죄 미스터리", genre: "스릴러", icon: "🕵️",
-        desc: "사건의 진실을 추리하고 싶을 때" }
-    ];
+function go(p,d){S.ph=p;S.pt=S.pd=d;S.exp=0;$('#prof').className=p;$('#bn').textContent=TXT[p];$('#bub').textContent=BUB[p]||'';if(p==='warn')beep(880,.18)}
 
-    function filterMovies(genre, button) {
-      const filtered = genre === "전체"
-        ? data
-        : data.filter(movie => movie.genre === genre);
+function nextPh(){
+  const k=Math.min(1,S.el/75);
+  if(S.ph==='board')go('warn',Math.max(.5,.8-k*.3));
+  else if(S.ph==='warn'){go('scan',rnd(1.4,2.2));if(Math.random()<.15+k*.2)startAsk()}
+  else if(S.ph==='scan'){if(Math.random()<.35+k*.15)go('walk',3.4-k*.8);else go('board',rnd(2,3.6)*(1-k*.35))}
+  else if(S.ph==='walk')go('check',1.3);
+  else go('board',rnd(2,3.4)*(1-k*.35));
+}
 
-      document.querySelectorAll(".filters button").forEach(btn => {
-        btn.classList.remove("active");
-      });
-      button.classList.add("active");
+const exposed=()=>S.mode!=='study'||S.hide>0;
 
-      document.getElementById("movies").innerHTML =
-        filtered.map(movie => `
-          <article class="card">
-            <div class="poster">${movie.icon}</div>
-            <h3>${movie.title}</h3>
-            <p>${movie.genre}</p>
-            <p>${movie.desc}</p>
-          </article>
-        `).join("");
-    }
+function setMode(m){
+  if(!S||S.over||m===S.mode)return;
+  if(S.ask!==null){if(m==='study')answer();return}
+  if(m==='study')S.hide=ACT[S.mode].d;else S.hide=0;
+  if(S.mode!=='study')S.last=S.mode;
+  S.mode=m;
+}
 
-    filterMovies("전체", document.querySelector(".filters button"));
-  </script>
+function startAsk(){S.ask=1.4;$('#ask').style.display='block';beep(660,.15)}
+function answer(){
+  if(S.ask===null)return;
+  S.ask=null;$('#ask').style.display='none';
+  if(S.mode!=='study'){S.last=S.mode;S.hide=ACT[S.mode].d;S.mode='study'}
+  S.score+=50;pop('+50 임기응변!');
+}
+
+function pop(t){
+  const e=document.createElement('div');e.className='pop';e.textContent=t;e.style.marginLeft='-60px';$('#scene').appendChild(e);
+  A(e,[{transform:'translateY(0)',opacity:1},{transform:'translateY(-60px)',opacity:0}],{duration:900}).onfinish=()=>e.remove();
+}
+
+function hurt(msg,reset){
+  S.lives--;S.mode='study';S.hide=0;S.inv=1.5;S.exp=0;S.ask=null;$('#ask').style.display='none';
+  pop(msg);beep(150,.3);A($('#scene'),[{transform:'translateX(0)'},{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(0)'}],{duration:300});
+  if(S.lives<=0)return finish(false);
+  if(reset){go('board',2.8);$('#bn').textContent='딱 걸렸다! 잠깐 조용히...'}
+}
+
+function tick(now){
+  if(!S||S.over)return;
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  S.t-=dt;S.el+=dt;S.pt-=dt;S.inv=Math.max(0,S.inv-dt);S.hide=Math.max(0,S.hide-dt);
+  if(S.mode!=='study'){S.score+=ACT[S.mode].r*dt;S.secs[S.mode]+=dt}
+  if(S.ask!==null){S.ask-=dt;if(S.ask<=0)hurt('대답을 못했다!',false)}
+  if(!S.over&&(S.ph==='scan'||S.ph==='check')&&exposed()&&S.inv<=0){S.exp+=dt;if(S.exp>.3)hurt('딱 걸렸다!',true)}else S.exp=0;
+  if(!S.over&&S.pt<=0)nextPh();
+  if(!S.over&&S.t<=0){S.t=0;draw();return finish(true)}
+  if(S.over)return;
+  draw();raf=requestAnimationFrame(tick);
+}
+
+function draw(){
+  $('#tm').textContent=Math.ceil(S.t);$('#sc').textContent=Math.floor(S.score);
+  $('#lv').textContent='❤️'.repeat(Math.max(0,S.lives))+'🖤'.repeat(Math.max(0,3-S.lives));
+  const p=S.ph==='walk'?1-S.pt/S.pd:S.ph==='check'?1:0;
+  $('#prof').style.transform=`translateY(${p*46}px) scale(${1+p*.75})`;
+  let h;
+  if(S.mode==='study'&&S.hide<=0)h='📖<br>필기하는 중';
+  else if(S.mode==='study')h=ACT[S.last].e+'<br>앗, 숨기는 중...';
+  else h=ACT[S.mode].e+'<br>'+ACT[S.mode].n+' 중';
+  if(h!==shown){$('#screen').innerHTML=h;shown=h}
+  $('#screen').classList.toggle('hot',exposed()&&(S.ph==='warn'||S.ph==='scan'||S.ph==='check'));
+  ORDER.forEach(m=>{$('#s_'+m).textContent=Math.floor(S.secs[m])+'초';document.querySelector(`[data-m="${m}"]`).classList.toggle('on',S.mode===m)});
+}
+
+function finish(win){
+  S.over=true;cancelAnimationFrame(raf);draw();
+  const sc=Math.floor(S.score),b=best(),nb=sc>b;if(nb)saveBest(sc);
+  const rank=sc<200?'모범생 😇':sc<450?'평범한 대학생 🙂':sc<700?'딴짓 고수 😎':'딴짓의 신 👑';
+  const head=win?`<h1>🔔 수업 끝!</h1><p>들키지 않고 살아남았어요.<br>칭호: <b style="color:var(--lime)">${rank}</b></p>`:`<h1>😱 적발!</h1><p>교수님께 세 번 걸려서<br>출석 부정으로 F학점을 받았어요.</p>`;
+  setTimeout(()=>showOv(`${head}<p>딴짓 점수 <b style="color:var(--lime)">${sc}</b>점 ${nb?'(최고 기록!)':'(최고 '+b+'점)'}</p><button>다시 하기</button>`),win?300:700);
+}
+
+document.addEventListener('keydown',e=>{
+  if(!S||S.over)return;
+  if(e.key===' '||e.key==='Enter'){e.preventDefault();if(!e.repeat)S.ask!==null?answer():setMode('study');return}
+  const m=KEY[e.key];if(m&&!e.repeat)setMode(m);
+});
+$('#pad').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.m)});
+$('#askb').addEventListener('pointerdown',e=>{e.preventDefault();answer()});
+intro();
+</script>
 </body>
 </html>
