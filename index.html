@@ -36,11 +36,17 @@ small{display:block;font-size:11px;opacity:.7}
 .title h1{font-size:46px;margin:0 0 6px;color:var(--gold)}
 .title p{margin:0 0 20px;font-size:18px}
 .starters{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.st{font-size:20px;padding:12px}.st span{display:block;font-size:56px}
+.st{font-size:20px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.st .pm{width:86px;height:86px}
+.pm{display:block;image-rendering:auto;filter:drop-shadow(0 4px 3px rgba(0,0,0,.35))}
+.mon .pm{width:116px;height:116px}
+.pm.ico{width:26px;height:26px;display:inline-block;vertical-align:middle;filter:none}
+.top i.x,.pm.x{opacity:.3;filter:grayscale(1)}
 .modal{position:absolute;inset:0;background:rgba(15,25,35,.92);display:flex;flex-direction:column;gap:10px;justify-content:center;padding:24px;color:#fff;z-index:5}
 .modal h3{margin:0 0 4px;font-size:22px;font-weight:400}
 .modal button{text-align:left;font-size:17px}
-@media(max-width:420px){.mon{font-size:68px}.hud{min-width:140px}}
+.modal .swbtn{display:flex;align-items:center;gap:8px}
+@media(max-width:420px){.mon .pm{width:92px;height:92px}.st .pm{width:70px;height:70px}.hud{min-width:140px}}
 </style>
 </head>
 <body>
@@ -48,37 +54,49 @@ small{display:block;font-size:11px;opacity:.7}
 <script>
 const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms)),R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const A=(el,k,o)=>el.animate(k,matchMedia('(prefers-reduced-motion:reduce)').matches?{...o,duration:1,iterations:1}:o);
-const T={불꽃:{풀:2,물:.5,불꽃:.5},물:{불꽃:2,풀:.5,물:.5},풀:{물:2,불꽃:.5,풀:.5},전기:{물:2,풀:.5,전기:.5},노말:{}};
-const MV={몸통박치기:[40,'노말'],전광석화:[45,'노말'],불꽃세례:[55,'불꽃'],물대포:[55,'물'],덩굴채찍:[55,'풀'],전기쇼크:[55,'전기']};
+const T={
+불꽃:{풀:2,얼음:2,벌레:2,물:.5,불꽃:.5},
+물:{불꽃:2,물:.5,풀:.5},
+풀:{물:2,풀:.5,벌레:.5},
+전기:{물:2,풀:.5,전기:.5},
+얼음:{풀:2,벌레:.5,불꽃:.5,물:.5,얼음:.5},
+벌레:{풀:2,에스퍼:2,악:2,불꽃:.5,벌레:.5},
+악:{에스퍼:2,악:.5,벌레:.5},
+에스퍼:{악:0,에스퍼:.5,벌레:.5},
+노말:{}};
+const MV={
+몸통박치기:[40,'노말'],전광석화:[45,'노말'],물대포:[55,'물'],덩굴채찍:[55,'풀'],
+얼음숨결:[55,'얼음'],프레젠트:[50,'얼음'],벌레먹기:[50,'벌레'],옛노래:[50,'벌레'],
+무언의힘:[55,'에스퍼'],염동력:[55,'에스퍼'],물기:[55,'악'],성장흡수:[50,'풀']};
+const DEX='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
 const SP=[
-{n:'파이리',e:'🦎',t:'불꽃',h:39,a:52,m:['몸통박치기','불꽃세례']},
-{n:'꼬부기',e:'🐢',t:'물',h:44,a:48,m:['몸통박치기','물대포']},
-{n:'이상해씨',e:'🌱',t:'풀',h:45,a:49,m:['몸통박치기','덩굴채찍']},
-{n:'피카츄',e:'⚡',t:'전기',h:35,a:55,m:['몸통박치기','전기쇼크']},
-{n:'꼬렛',e:'🐀',t:'노말',h:30,a:56,m:['몸통박치기','전광석화']},
-{n:'구구',e:'🐦',t:'노말',h:40,a:45,m:['몸통박치기','전광석화']},
-{n:'고라파덕',e:'🦆',t:'물',h:50,a:52,m:['몸통박치기','물대포']},
-{n:'뚜벅쵸',e:'🌼',t:'풀',h:45,a:50,m:['몸통박치기','덩굴채찍']}];
+{n:'사랑동이',id:370,t:'물',h:43,a:48,m:['몸통박치기','물대포']},
+{n:'귀뚤뚜기',id:401,t:'벌레',h:37,a:40,m:['몸통박치기','옛노래']},
+{n:'루브도',id:942,t:'노말',h:48,a:58,m:['물기','몸통박치기']},
+{n:'딜리버드',id:225,t:'얼음',h:45,a:55,m:['프레젠트','얼음숨결']},
+{n:'안농',id:201,t:'에스퍼',h:48,a:72,m:['무언의힘','염동력']},
+{n:'해너츠',id:191,t:'풀',h:30,a:30,m:['덩굴채찍','성장흡수']}];
+const IMG=(s,cls='')=>`<img class="pm ${cls}" src="${DEX}${s.id}.png" alt="${s.n}" loading="lazy">`;
 const mh=(s,l)=>Math.floor(s.h/4)+l*4+10;
 const mk=(s,l)=>{const m={s,l,xp:0};m.max=m.hp=mh(s,l);return m};
 let G;
 
 function start(){
   G={party:[],act:0,balls:5,pots:3,wins:0,dex:new Set(),busy:false};
-  $('#app').innerHTML=`<div class="title"><h1>포켓 모험</h1><p>첫 번째 파트너를 골라 보세요.</p><div class="starters">${[0,1,2,3].map(i=>`<button class="st" data-i="${i}"><span>${SP[i].e}</span>${SP[i].n}<small>${SP[i].t} 타입</small></button>`).join('')}</div></div>`;
+  $('#app').innerHTML=`<div class="title"><h1>포켓 모험</h1><p>첫 번째 파트너를 골라 보세요.</p><div class="starters">${SP.map((s,i)=>`<button class="st" data-i="${i}">${IMG(s)}${s.n}<small>${s.t} 타입</small></button>`).join('')}</div></div>`;
   document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{const s=SP[b.dataset.i];G.party=[mk(s,5)];G.dex.add(s.n);battle()});
 }
 
 const hud=(m,show)=>{const r=m.hp/m.max;return `<b>${m.s.n}</b><span>Lv.${m.l}</span><div class="bar"><i style="width:${r*100}%;background:${r>.5?'#4caf50':r>.2?'#f2b632':'#e0483e'}"></i></div>${show?`<small>${m.hp} / ${m.max}</small>`:''}`};
 const upd=()=>{$('#ph').innerHTML=hud(G.party[G.act],1);$('#eh').innerHTML=hud(G.E,0)};
-const hdr=()=>{$('#top').innerHTML=`<span>연승 <b>${G.wins}</b></span><span>도감 <b>${G.dex.size}/${SP.length}</b></span><span class="pt">${G.party.map(m=>`<i class="${m.hp>0?'':'x'}">${m.s.e}</i>`).join('')}</span>`};
+const hdr=()=>{$('#top').innerHTML=`<span>연승 <b>${G.wins}</b></span><span>도감 <b>${G.dex.size}/${SP.length}</b></span><span class="pt">${G.party.map(m=>IMG(m.s,'ico'+(m.hp>0?'':' x'))).join('')}</span>`};
 const say=(t,w=750)=>{$('#msg').textContent=t;return sleep(w)};
 const ready=()=>{G.busy=false;menu();hdr();$('#menu').classList.remove('off')};
 
 function battle(){
   const p=G.party[G.act];
   G.E=mk(SP[R(0,SP.length-1)],Math.max(2,p.l+R(-1,1)));G.busy=true;
-  $('#app').innerHTML=`<div class="top" id="top"></div><div class="scene"><div class="hud e" id="eh"></div><div class="pad e"></div><div class="mon e" id="es">${G.E.s.e}</div><div class="pad p"></div><div class="mon p" id="ps">${p.s.e}</div><div class="hud p" id="ph"></div></div><div class="msg" id="msg"></div><div class="menu off" id="menu"></div>`;
+  $('#app').innerHTML=`<div class="top" id="top"></div><div class="scene"><div class="hud e" id="eh"></div><div class="pad e"></div><div class="mon e" id="es">${IMG(G.E.s)}</div><div class="pad p"></div><div class="mon p" id="ps">${IMG(p.s)}</div><div class="hud p" id="ph"></div></div><div class="msg" id="msg"></div><div class="menu off" id="menu"></div>`;
   upd();hdr();menu();
   A($('#es'),[{transform:'translateX(80px)',opacity:0},{transform:'translateX(0)',opacity:1}],{duration:500});
   say(`야생의 ${G.E.s.n}(Lv.${G.E.l})이(가) 나타났다!`,900).then(()=>say(`${p.s.n}, 어떻게 할까?`,0)).then(()=>{G.busy=false;$('#menu').classList.remove('off')});
@@ -167,13 +185,13 @@ async function lose(){
 
 function swap(forced){
   const m=document.createElement('div');m.className='modal';
-  m.innerHTML=`<h3>${forced?'다음 포켓몬을 고르세요':'교체할 포켓몬을 고르세요'}</h3>`+G.party.map((p,i)=>`<button data-i="${i}" ${p.hp<=0||i===G.act?'disabled':''}>${p.s.e} ${p.s.n} Lv.${p.l} (${p.hp}/${p.max})</button>`).join('')+(forced?'':'<button class="cancel">취소</button>');
+  m.innerHTML=`<h3>${forced?'다음 포켓몬을 고르세요':'교체할 포켓몬을 고르세요'}</h3>`+G.party.map((p,i)=>`<button class="swbtn" data-i="${i}" ${p.hp<=0||i===G.act?'disabled':''}>${IMG(p.s,'ico')} ${p.s.n} Lv.${p.l} (${p.hp}/${p.max})</button>`).join('')+(forced?'':'<button class="cancel">취소</button>');
   $('#app').appendChild(m);
   m.onclick=async e=>{
     const b=e.target.closest('button');if(!b||b.disabled)return;
     if(b.className==='cancel'){m.remove();return}
     m.remove();G.busy=true;$('#menu').classList.add('off');
-    G.act=+b.dataset.i;const ps=$('#ps');ps.getAnimations().forEach(x=>x.cancel());ps.textContent=G.party[G.act].s.e;upd();hdr();
+    G.act=+b.dataset.i;const ps=$('#ps');ps.getAnimations().forEach(x=>x.cancel());ps.style.opacity=1;ps.innerHTML=IMG(G.party[G.act].s);upd();hdr();
     await say(`가라, ${G.party[G.act].s.n}!`);
     if(forced){await say(`${G.party[G.act].s.n}, 어떻게 할까?`,0);ready()}else await enemyTurn();
   };

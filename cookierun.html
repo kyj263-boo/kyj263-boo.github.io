@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>쿠키런 - Cookie Run</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: #1a1033;
+    font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  #wrap {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    display: block;
+    background: linear-gradient(180deg, #3a2a6b 0%, #5b3f8f 45%, #8b5fb0 100%);
+    max-width: 100%;
+    max-height: 100%;
+    touch-action: none;
+  }
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    color: #fff;
+    text-align: center;
+    background: rgba(26, 16, 51, 0.72);
+    backdrop-filter: blur(3px);
+  }
+  .overlay.hidden { display: none; }
+  .title {
+    font-size: clamp(32px, 7vw, 64px);
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #ffd86b;
+    text-shadow: 0 3px 0 #a9712b, 0 6px 14px rgba(0,0,0,.5);
+  }
+  .sub { font-size: clamp(14px, 3vw, 20px); opacity: .9; line-height: 1.6; }
+  .score-big { font-size: clamp(22px, 5vw, 36px); font-weight: 700; }
+  button {
+    margin-top: 6px;
+    padding: 14px 34px;
+    font-size: clamp(16px, 4vw, 22px);
+    font-weight: 700;
+    color: #5b2d00;
+    background: linear-gradient(180deg, #ffe08a, #ffbd3e);
+    border: none;
+    border-radius: 40px;
+    cursor: pointer;
+    box-shadow: 0 5px 0 #c98a1e, 0 8px 18px rgba(0,0,0,.4);
+    transition: transform .08s;
+  }
+  button:active { transform: translateY(3px); box-shadow: 0 2px 0 #c98a1e; }
+  .hint { font-size: 13px; opacity: .7; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="800" height="450"></canvas>
+
+  <div id="startScreen" class="overlay">
+    <div class="title">🍪 쿠키런</div>
+    <div class="sub">장애물을 피하고 젤리를 모아 최고 점수에 도전하세요!</div>
+    <button id="startBtn">게임 시작</button>
+    <div class="hint">탭 / 클릭 / Space = 점프 (두 번 점프 가능) · ↓ 또는 아래로 밀기 = 슬라이드</div>
+  </div>
+
+  <div id="gameOverScreen" class="overlay hidden">
+    <div class="title" style="color:#ff8a8a;">게임 오버</div>
+    <div class="score-big" id="finalScore">점수: 0</div>
+    <div class="sub" id="bestScore">최고 점수: 0</div>
+    <button id="restartBtn">다시 하기</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width;
+  const H = canvas.height;
+  const GROUND_Y = H - 70;
+
+  const startScreen = document.getElementById("startScreen");
+  const gameOverScreen = document.getElementById("gameOverScreen");
+  const startBtn = document.getElementById("startBtn");
+  const restartBtn = document.getElementById("restartBtn");
+  const finalScoreEl = document.getElementById("finalScore");
+  const bestScoreEl = document.getElementById("bestScore");
+
+  const GRAVITY = 0.9;
+  const JUMP_V = -16;
+
+  let state = "ready"; // ready | playing | over
+  let best = Number(localStorage.getItem("cookierun_best") || 0);
+
+  // ---- Player (cookie) ----
+  const player = {
+    x: 110,
+    y: GROUND_Y,
+    w: 46,
+    h: 54,
+    vy: 0,
+    onGround: true,
+    jumps: 0,
+    sliding: false,
+    slideTimer: 0,
+  };
+
+  let obstacles = [];
+  let jellies = [];
+  let particles = [];
+  let clouds = [];
+
+  let speed = 7;
+  let score = 0;
+  let distance = 0;
+  let spawnObstacleTimer = 0;
+  let spawnJellyTimer = 0;
+  let frame = 0;
+
+  function reset() {
+    player.y = GROUND_Y;
+    player.vy = 0;
+    player.onGround = true;
+    player.jumps = 0;
+    player.sliding = false;
+    player.slideTimer = 0;
+    obstacles = [];
+    jellies = [];
+    particles = [];
+    speed = 7;
+    score = 0;
+    distance = 0;
+    spawnObstacleTimer = 40;
+    spawnJellyTimer = 70;
+    frame = 0;
+    clouds = [];
+    for (let i = 0; i < 5; i++) {
+      clouds.push({
+        x: Math.random() * W,
+        y: 40 + Math.random() * 120,
+        s: 0.4 + Math.random() * 0.8,
+        r: 20 + Math.random() * 30,
+      });
+    }
+  }
+
+  function startGame() {
+    reset();
+    state = "playing";
+    startScreen.classList.add("hidden");
+    gameOverScreen.classList.add("hidden");
+  }
+
+  function gameOver() {
+    state = "over";
+    if (score > best) {
+      best = score;
+      localStorage.setItem("cookierun_best", String(best));
+    }
+    finalScoreEl.textContent = "점수: " + score;
+    bestScoreEl.textContent = "최고 점수: " + best;
+    gameOverScreen.classList.remove("hidden");
+  }
+
+  // ---- Input ----
+  function jump() {
+    if (state !== "playing") return;
+    if (player.jumps < 2) {
+      player.vy = JUMP_V;
+      player.onGround = false;
+      player.jumps++;
+      player.sliding = false;
+      spawnJump();
+    }
+  }
+
+  function startSlide() {
+    if (state !== "playing") return;
+    if (player.onGround) {
+      player.sliding = true;
+      player.slideTimer = 28;
+    }
+  }
+
+  function spawnJump() {
+    for (let i = 0; i < 6; i++) {
+      particles.push({
+        x: player.x + player.w / 2,
+        y: player.y,
+        vx: (Math.random() - 0.5) * 4,
+        vy: Math.random() * 3 + 1,
+        life: 20,
+        color: "#ffe08a",
+        r: Math.random() * 3 + 1.5,
+      });
+    }
+  }
+
+  // Keyboard
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") {
+      e.preventDefault();
+      if (state === "playing") jump();
+      else if (state === "ready") startGame();
+      else if (state === "over") startGame();
+    } else if (e.code === "ArrowDown" || e.code === "KeyS") {
+      e.preventDefault();
+      startSlide();
+    }
+  });
+
+  // Pointer (mouse + touch): tap = jump, swipe down = slide
+  let pointerStartY = null;
+  canvas.addEventListener("pointerdown", (e) => {
+    pointerStartY = e.clientY;
+    if (state === "playing") {
+      // decide after a short gesture; immediate tap jumps
+      jump();
+    }
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (pointerStartY !== null && e.clientY - pointerStartY > 40) {
+      startSlide();
+      pointerStartY = null;
+    }
+  });
+  canvas.addEventListener("pointerup", () => { pointerStartY = null; });
+
+  startBtn.addEventListener("click", startGame);
+  restartBtn.addEventListener("click", startGame);
+
+  // ---- Spawning ----
+  function spawnObstacle() {
+    const type = Math.random();
+    if (type < 0.55) {
+      // ground spike / crate - jump over
+      const h = 36 + Math.random() * 30;
+      obstacles.push({ x: W + 20, y: GROUND_Y - h, w: 34, h: h, kind: "ground" });
+    } else if (type < 0.8) {
+      // tall pillar - jump
+      obstacles.push({ x: W + 20, y: GROUND_Y - 70, w: 30, h: 70, kind: "ground" });
+    } else {
+      // overhead bar - slide under
+      obstacles.push({ x: W + 20, y: GROUND_Y - 92, w: 40, h: 34, kind: "air" });
+    }
+  }
+
+  function spawnJelly() {
+    const high = Math.random() < 0.4;
+    const baseY = high ? GROUND_Y - 110 : GROUND_Y - 45;
+    const count = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < count; i++) {
+      jellies.push({
+        x: W + 20 + i * 34,
+        y: baseY - Math.sin(i * 0.6) * 10,
+        r: 11,
+        collected: false,
+      });
+    }
+  }
+
+  // ---- Collision ----
+  function playerRect() {
+    const h = player.sliding ? player.h * 0.55 : player.h;
+    const y = player.y - h;
+    return { x: player.x, y: y, w: player.w, h: h };
+  }
+
+  function overlap(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  // ---- Update ----
+  function update() {
+    frame++;
+    distance += speed;
+    score = Math.floor(distance / 10);
+    speed += 0.0016; // gradual difficulty
+
+    // player physics
+    player.vy += GRAVITY;
+    player.y += player.vy;
+    if (player.y >= GROUND_Y) {
+      player.y = GROUND_Y;
+      player.vy = 0;
+      player.onGround = true;
+      player.jumps = 0;
+    } else {
+      player.onGround = false;
+    }
+    if (player.sliding) {
+      player.slideTimer--;
+      if (player.slideTimer <= 0 || !player.onGround) player.sliding = false;
+    }
+
+    // spawn
+    spawnObstacleTimer--;
+    if (spawnObstacleTimer <= 0) {
+      spawnObstacle();
+      const gap = Math.max(45, 95 - speed * 2);
+      spawnObstacleTimer = gap + Math.random() * 50;
+    }
+    spawnJellyTimer--;
+    if (spawnJellyTimer <= 0) {
+      spawnJelly();
+      spawnJellyTimer = 80 + Math.random() * 90;
+    }
+
+    // move obstacles
+    const pr = playerRect();
+    for (const o of obstacles) {
+      o.x -= speed;
+      if (overlap(pr, o)) { gameOver(); return; }
+    }
+    obstacles = obstacles.filter((o) => o.x + o.w > -10);
+
+    // jellies
+    for (const j of jellies) {
+      j.x -= speed;
+      if (!j.collected) {
+        const cx = pr.x + pr.w / 2;
+        const cy = pr.y + pr.h / 2;
+        const dx = cx - j.x, dy = cy - j.y;
+        if (Math.sqrt(dx * dx + dy * dy) < j.r + 24) {
+          j.collected = true;
+          score += 5;
+          distance += 50;
+          for (let i = 0; i < 8; i++) {
+            particles.push({
+              x: j.x, y: j.y,
+              vx: (Math.random() - 0.5) * 6,
+              vy: (Math.random() - 0.5) * 6,
+              life: 22, color: "#7ef0ff", r: Math.random() * 3 + 1.5,
+            });
+          }
+        }
+      }
+    }
+    jellies = jellies.filter((j) => j.x > -20 && !j.collected);
+
+    // particles
+    for (const p of particles) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life--;
+    }
+    particles = particles.filter((p) => p.life > 0);
+
+    // clouds
+    for (const c of clouds) {
+      c.x -= c.s;
+      if (c.x < -60) { c.x = W + 40; c.y = 40 + Math.random() * 120; }
+    }
+  }
+
+  // ---- Draw ----
+  function drawCookie(x, y, sliding) {
+    const h = sliding ? player.h * 0.55 : player.h;
+    const w = sliding ? player.w * 1.25 : player.w;
+    const topY = y - h;
+    ctx.save();
+    ctx.translate(x + w / 2, topY + h / 2);
+    // bounce tilt while running
+    if (!sliding) ctx.rotate(Math.sin(frame * 0.3) * 0.08);
+
+    // body
+    ctx.fillStyle = "#d9893f";
+    ctx.strokeStyle = "#a9641f";
+    ctx.lineWidth = 3;
+    roundRect(-w / 2, -h / 2, w, h, sliding ? 18 : 14);
+    ctx.fill();
+    ctx.stroke();
+
+    // chocolate chips
+    ctx.fillStyle = "#5a3315";
+    const chips = [[-8, -10], [9, -4], [-4, 10], [6, 12], [0, 0]];
+    for (const [cx, cy] of chips) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // eyes
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(-6, -6, 5, 0, Math.PI * 2);
+    ctx.arc(10, -6, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#222";
+    ctx.beginPath(); ctx.arc(-5, -6, 2.4, 0, Math.PI * 2);
+    ctx.arc(11, -6, 2.4, 0, Math.PI * 2); ctx.fill();
+
+    // smile
+    ctx.strokeStyle = "#5a3315";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(2, 4, 7, 0.1 * Math.PI, 0.9 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // clouds
+    ctx.fillStyle = "rgba(255,255,255,0.22)";
+    for (const c of clouds) {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      ctx.arc(c.x + c.r * 0.9, c.y + 6, c.r * 0.8, 0, Math.PI * 2);
+      ctx.arc(c.x - c.r * 0.9, c.y + 6, c.r * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ground
+    ctx.fillStyle = "#4a2f12";
+    ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+    ctx.fillStyle = "#6b4a22";
+    ctx.fillRect(0, GROUND_Y, W, 10);
+    // ground stripes moving
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    const off = (frame * speed) % 60;
+    for (let x = -off; x < W; x += 60) {
+      ctx.fillRect(x, GROUND_Y + 18, 30, 6);
+    }
+
+    // jellies
+    for (const j of jellies) {
+      ctx.save();
+      ctx.translate(j.x, j.y + Math.sin(frame * 0.15 + j.x) * 2);
+      ctx.fillStyle = "#7ef0ff";
+      ctx.strokeStyle = "#2bb7d6";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, j.r, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.beginPath();
+      ctx.arc(-3, -3, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // obstacles
+    for (const o of obstacles) {
+      if (o.kind === "air") {
+        ctx.fillStyle = "#b23b6b";
+        ctx.strokeStyle = "#7a2347";
+      } else {
+        ctx.fillStyle = "#8a5a2a";
+        ctx.strokeStyle = "#5a3315";
+      }
+      ctx.lineWidth = 3;
+      roundRect(o.x, o.y, o.w, o.h, 6);
+      ctx.fill(); ctx.stroke();
+      // spikes decoration on ground obstacles
+      if (o.kind === "ground") {
+        ctx.fillStyle = "#c98a3a";
+        ctx.beginPath();
+        ctx.moveTo(o.x, o.y);
+        ctx.lineTo(o.x + o.w / 2, o.y - 10);
+        ctx.lineTo(o.x + o.w, o.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    // particles
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life / 22);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // player
+    drawCookie(player.x, player.y, player.sliding);
+
+    // HUD
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 26px 'Segoe UI', sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("점수 " + score, 20, 40);
+    ctx.textAlign = "right";
+    ctx.font = "16px 'Segoe UI', sans-serif";
+    ctx.fillText("최고 " + best, W - 20, 34);
+    ctx.textAlign = "left";
+  }
+
+  // ---- Loop ----
+  function loop() {
+    if (state === "playing") {
+      update();
+    }
+    if (state !== "ready") {
+      draw();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // initial static background draw
+  reset();
+  draw();
+  loop();
+})();
+</script>
+</body>
+</html>
