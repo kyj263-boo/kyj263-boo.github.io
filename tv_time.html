@@ -1,0 +1,246 @@
+[tv_time.html](https://github.com/user-attachments/files/34216072/tv_time.html)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="보고 싶은 TV 프로그램의 방송 요일과 시간을 검색하는 TV TIME">
+  <title>TV TIME | 나만의 TV 편성표</title>
+  <style>
+    :root {
+      --navy: #101b32; --blue: #3979f6; --ink: #182235;
+      --muted: #718096; --line: #e6eaf0; --surface: #f5f7fb;
+      --white: #fff; --pink: #e34b70;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--surface); color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+    }
+    .shell { width: min(100% - 32px, 900px); margin: 38px auto; }
+    header {
+      color: white; background: linear-gradient(135deg, #101b32, #1c3156);
+      padding: 30px; border-radius: 22px; box-shadow: 0 14px 35px #172b4d20;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 800; letter-spacing: .5px; }
+    .brand-icon {
+      display: grid; place-items: center; width: 44px; height: 44px;
+      border-radius: 13px; background: var(--blue); font-size: 23px;
+    }
+    .eyebrow { color: #aebfdb; font-size: 13px; margin: 25px 0 8px; }
+    h1 { margin: 0; font-size: clamp(27px, 5vw, 38px); letter-spacing: -1.3px; }
+    .intro { color: #c2cee0; margin: 10px 0 22px; line-height: 1.6; }
+    .search-wrap { display: flex; gap: 10px; background: white; padding: 7px; border-radius: 13px; }
+    .search-wrap input {
+      min-width: 0; flex: 1; border: 0; outline: 0; padding: 10px 12px;
+      font: inherit; color: var(--ink); font-size: 15px;
+    }
+    button, select { font: inherit; cursor: pointer; }
+    .search-wrap button, .primary {
+      border: 0; color: white; background: var(--blue); border-radius: 9px;
+      padding: 11px 17px; font-weight: 700;
+    }
+    .meta { display: flex; justify-content: space-between; color: #d5deeb; font-size: 12px; margin-top: 17px; }
+    main {
+      margin-top: 20px; background: white; border: 1px solid var(--line);
+      border-radius: 20px; padding: 25px; box-shadow: 0 8px 25px #172b4d08;
+    }
+    .section-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 0 14px; }
+    h2 { font-size: 19px; margin: 0; letter-spacing: -.4px; }
+    .hint, .count { color: var(--muted); font-size: 12px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 23px; }
+    .chip {
+      background: white; color: #526176; border: 1px solid var(--line);
+      border-radius: 999px; padding: 8px 13px; font-size: 13px;
+    }
+    .chip.active { background: var(--blue); border-color: var(--blue); color: white; }
+    .divider { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 22px 0 13px; }
+    .favorite-toggle {
+      border: 1px solid var(--line); background: white; color: #536176;
+      border-radius: 9px; padding: 8px 12px; font-size: 13px;
+    }
+    .favorite-toggle.active { color: var(--pink); border-color: #f3bfd0; background: #fff6f8; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; transition: .18s; }
+    .card:hover { border-color: #b8cdfd; transform: translateY(-2px); box-shadow: 0 8px 18px #172b4d0b; }
+    .card-top { display: flex; justify-content: space-between; align-items: center; }
+    .channel { background: #edf4ff; color: #2864cf; border-radius: 6px; padding: 5px 8px; font-size: 11px; font-weight: 700; }
+    .heart { border: 0; background: transparent; font-size: 21px; color: #aab3c0; padding: 0 2px; }
+    .heart.saved { color: var(--pink); }
+    .program { margin: 13px 0 17px; font-size: 17px; font-weight: 750; }
+    .details { display: flex; justify-content: space-between; align-items: end; }
+    .day, .genre { color: var(--muted); font-size: 12px; }
+    .time { font-size: 23px; font-weight: 800; letter-spacing: -.5px; }
+    .genre { margin-top: 9px; }
+    .empty { text-align: center; padding: 45px 12px; color: var(--muted); }
+    .empty strong { display: block; color: var(--ink); margin-bottom: 7px; }
+    .notice {
+      margin-top: 17px; padding: 13px 15px; background: #fff9e9;
+      border: 1px solid #f5e6b7; border-radius: 11px; color: #765c20;
+      font-size: 12px; line-height: 1.6;
+    }
+    footer { text-align: center; color: #8994a5; font-size: 12px; padding: 24px 0 10px; }
+    @media (max-width: 600px) {
+      .shell { width: min(100% - 20px, 900px); margin: 12px auto; }
+      header { padding: 23px 19px; border-radius: 17px; }
+      main { padding: 19px 15px; }
+      .cards { grid-template-columns: 1fr; }
+      .search-wrap button { padding: 10px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand"><span class="brand-icon">▣</span> TV TIME</div>
+      <p class="eyebrow">MY PERSONAL TV GUIDE</p>
+      <h1>오늘 뭐 볼까?</h1>
+      <p class="intro">보고 싶은 TV 프로그램의 방송 요일과 시간을 찾아보세요.</p>
+      <form class="search-wrap" id="searchForm">
+        <input id="searchInput" type="search" placeholder="프로그램 이름 검색..." aria-label="프로그램 이름 검색">
+        <button type="submit">검색</button>
+      </form>
+      <div class="meta"><span>지상파 · 케이블 · 종합편성</span><span id="favoriteCount">♡ 0개 즐겨찾기</span></div>
+    </header>
+
+    <main>
+      <div class="section-title"><h2>방송 채널</h2><span class="hint">채널 선택</span></div>
+      <div class="filters" id="channelFilters" aria-label="방송 채널 필터"></div>
+      <hr class="divider">
+      <div class="section-title"><h2>방송 요일</h2><span class="hint">요일 선택</span></div>
+      <div class="filters" id="dayFilters" aria-label="방송 요일 필터"></div>
+
+      <div class="toolbar">
+        <div><h2>프로그램 편성표</h2><div class="count" id="resultCount" aria-live="polite">검색 결과 0개</div></div>
+        <button class="favorite-toggle" id="favoriteToggle" type="button">♡ 즐겨찾기만</button>
+      </div>
+      <section class="cards" id="programList" aria-live="polite"></section>
+      <div class="notice">
+        <strong>안내:</strong> 현재 표시된 프로그램과 방송 시간은 화면 기능을 보여주기 위한 예시 데이터입니다.
+        실제 편성표가 아니며, 방송사 편성표 데이터와 연결해야 최신 방영 정보를 제공할 수 있습니다.
+      </div>
+    </main>
+    <footer>TV TIME · 나만의 방송 편성표</footer>
+  </div>
+
+  <script>
+    // 데모용 예시 데이터입니다. 실제 편성표 API 데이터가 아닙니다.
+    const programs = [
+      { name: "놀면 뭐하니?", channel: "MBC", day: "토요일", time: "18:30", genre: "예능" },
+      { name: "런닝맨", channel: "SBS", day: "일요일", time: "18:10", genre: "예능" },
+      { name: "1박 2일", channel: "KBS2", day: "일요일", time: "18:10", genre: "예능" },
+      { name: "유 퀴즈 온 더 블럭", channel: "tvN", day: "수요일", time: "20:45", genre: "토크쇼" },
+      { name: "아는 형님", channel: "JTBC", day: "토요일", time: "20:50", genre: "예능" },
+      { name: "나 혼자 산다", channel: "MBC", day: "금요일", time: "23:10", genre: "예능" },
+      { name: "미운 우리 새끼", channel: "SBS", day: "일요일", time: "21:05", genre: "예능" },
+      { name: "불후의 명곡", channel: "KBS2", day: "토요일", time: "18:05", genre: "음악" }
+    ];
+
+    const channels = ["전체", "KBS2", "MBC", "SBS", "tvN", "JTBC"];
+    const days = ["전체", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"];
+    let selectedChannel = "전체";
+    let selectedDay = "전체";
+    let favoritesOnly = false;
+    let favorites = new Set();
+
+    const $ = (selector) => document.querySelector(selector);
+
+    function makeFilters(container, values, selected, onSelect) {
+      container.innerHTML = "";
+      values.forEach(value => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "chip" + (value === selected ? " active" : "");
+        button.textContent = value;
+        button.setAttribute("aria-pressed", String(value === selected));
+        button.addEventListener("click", () => onSelect(value));
+        container.appendChild(button);
+      });
+    }
+
+    function render() {
+      makeFilters($("#channelFilters"), channels, selectedChannel, value => {
+        selectedChannel = value; render();
+      });
+      makeFilters($("#dayFilters"), days, selectedDay, value => {
+        selectedDay = value; render();
+      });
+
+      const query = $("#searchInput").value.trim().toLocaleLowerCase("ko");
+      const filtered = programs
+        .filter(p => p.name.toLocaleLowerCase("ko").includes(query))
+        .filter(p => selectedChannel === "전체" || p.channel === selectedChannel)
+        .filter(p => selectedDay === "전체" || p.day === selectedDay)
+        .filter(p => !favoritesOnly || favorites.has(p.name))
+        .sort((a, b) => a.time.localeCompare(b.time));
+
+      $("#favoriteCount").textContent = `♡ ${favorites.size}개 즐겨찾기`;
+      $("#favoriteToggle").classList.toggle("active", favoritesOnly);
+      $("#favoriteToggle").textContent = favoritesOnly ? "♥ 즐겨찾기 보는 중" : "♡ 즐겨찾기만";
+      $("#resultCount").textContent = `검색 결과 ${filtered.length}개`;
+      const list = $("#programList");
+      list.innerHTML = "";
+
+      if (!filtered.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.style.gridColumn = "1 / -1";
+        empty.innerHTML = "<strong>검색 결과가 없습니다.</strong>검색어나 필터를 변경해 보세요.";
+        list.appendChild(empty);
+        return;
+      }
+
+      filtered.forEach(p => {
+        const card = document.createElement("article");
+        card.className = "card";
+        const top = document.createElement("div");
+        top.className = "card-top";
+        const channel = document.createElement("span");
+        channel.className = "channel";
+        channel.textContent = p.channel;
+        const heart = document.createElement("button");
+        heart.type = "button";
+        heart.className = "heart" + (favorites.has(p.name) ? " saved" : "");
+        heart.textContent = favorites.has(p.name) ? "♥" : "♡";
+        heart.setAttribute("aria-label", favorites.has(p.name) ? `${p.name} 즐겨찾기 해제` : `${p.name} 즐겨찾기 추가`);
+        heart.addEventListener("click", () => {
+          favorites.has(p.name) ? favorites.delete(p.name) : favorites.add(p.name);
+          render();
+        });
+        top.append(channel, heart);
+
+        const title = document.createElement("div");
+        title.className = "program";
+        title.textContent = p.name;
+        const details = document.createElement("div");
+        details.className = "details";
+        const day = document.createElement("span");
+        day.className = "day";
+        day.textContent = `▦ ${p.day}`;
+        const time = document.createElement("time");
+        time.className = "time";
+        time.textContent = p.time;
+        details.append(day, time);
+        const genre = document.createElement("div");
+        genre.className = "genre";
+        genre.textContent = p.genre;
+        card.append(top, title, details, genre);
+        list.appendChild(card);
+      });
+    }
+
+    $("#searchForm").addEventListener("submit", event => {
+      event.preventDefault();
+      render();
+    });
+    $("#searchInput").addEventListener("input", render);
+    $("#favoriteToggle").addEventListener("click", () => {
+      favoritesOnly = !favoritesOnly;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
