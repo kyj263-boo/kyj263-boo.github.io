@@ -81,6 +81,28 @@
     .fav-item .fav-meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
     .fav-item .fav-remove { border: 0; background: transparent; color: #c6b9ab; font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 6px; border-radius: 8px; flex: none; }
     .fav-item .fav-remove:hover { background: #fdeee7; color: #d95f2d; }
+    .restaurant-finder { margin-top: 24px; padding-top: 22px; border-top: 1px dashed var(--line); }
+    .finder-title { font-size: 16px; font-weight: 800; margin: 0 0 6px; }
+    .finder-desc { color: var(--muted); font-size: 13px; margin: 0 0 14px; line-height: 1.6; }
+    .finder-desc strong { color: var(--orange-dark); }
+    .finder-controls { display: flex; flex-wrap: wrap; gap: 9px; }
+    #locationInput { flex: 1; min-width: 180px; border: 1px solid #e9dfd3; background: white; padding: 12px 13px; border-radius: 11px; color: var(--ink); font: inherit; font-size: 14px; outline-color: #f2a17b; }
+    .find-btn { border: 0; border-radius: 11px; padding: 12px 18px; background: var(--green); color: white; font-weight: 800; font-size: 14px; cursor: pointer; }
+    .find-btn:hover { background: #456a4d; }
+    .find-btn:disabled { opacity: .6; cursor: not-allowed; }
+    .geo-btn { border: 1px solid var(--line); background: white; color: #5d554c; border-radius: 11px; padding: 0 14px; font-weight: 800; font-size: 13px; cursor: pointer; }
+    .geo-btn:hover { background: #fff6ef; }
+    .finder-status { font-size: 13px; color: var(--muted); margin: 13px 0 0; min-height: 1px; }
+    .finder-status.error { color: #c0453a; }
+    .restaurant-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+    .restaurant-item { display: flex; align-items: center; gap: 13px; background: #f6faf6; border: 1px solid #e3efe4; border-radius: 14px; padding: 12px 14px; animation: rise .25s ease both; }
+    .restaurant-item .rank { width: 30px; height: 30px; flex: none; display: grid; place-items: center; background: #e4efe4; color: var(--green); border-radius: 9px; font-weight: 900; font-size: 14px; }
+    .restaurant-item .rest-body { flex: 1; min-width: 0; }
+    .restaurant-item .rest-name { font-weight: 800; font-size: 15px; }
+    .restaurant-item .rest-meta { color: var(--muted); font-size: 12px; margin-top: 2px; word-break: keep-all; }
+    .restaurant-item .rest-dist { flex: none; font-weight: 900; color: var(--green); font-size: 13px; }
+    .restaurant-item .map-link { flex: none; text-decoration: none; font-size: 18px; padding: 4px; border-radius: 8px; }
+    .restaurant-item .map-link:hover { background: #e4efe4; }
     footer { text-align: center; color: #a69b8e; font-size: 12px; padding-top: 25px; }
     @media (max-width: 600px) {
       .wrap { padding-top: 30px; }
@@ -164,6 +186,18 @@
             <button class="small-btn" id="favorite">♡ 마음에 들어요</button>
           </div>
         </div>
+      </div>
+
+      <div class="restaurant-finder">
+        <h3 class="finder-title">📍 가까운 식당 찾기</h3>
+        <p class="finder-desc">내 위치를 입력하면 <strong id="finderFood">이 메뉴</strong>를 파는 가까운 식당을 거리순으로 보여드려요.</p>
+        <div class="finder-controls">
+          <input type="text" id="locationInput" placeholder="예: 서울시 강남구 역삼동 또는 국민대학교" autocomplete="off">
+          <button class="find-btn" id="findBtn">식당 찾기</button>
+          <button class="geo-btn" id="geoBtn" title="현재 위치 사용">📡 현재 위치</button>
+        </div>
+        <p class="finder-status" id="finderStatus"></p>
+        <ul class="restaurant-list" id="restaurantList"></ul>
       </div>
     </section>
 
@@ -315,6 +349,11 @@
       void result.offsetWidth;
       result.classList.add("show");
       updateFavoriteButton();
+      // 메뉴가 바뀌면 식당 찾기 영역 갱신
+      document.getElementById("finderFood").textContent = choice.name;
+      document.getElementById("restaurantList").innerHTML = "";
+      document.getElementById("finderStatus").textContent = "";
+      document.getElementById("finderStatus").classList.remove("error");
       result.scrollIntoView({behavior:"smooth", block:"nearest"});
     }
 
@@ -350,6 +389,191 @@
       document.getElementById("people").value = "상관없음";
       document.getElementById("result").classList.remove("show");
       lastPick = null;
+    });
+
+    // ===== 가까운 식당 찾기 (OpenStreetMap) =====
+    // 메뉴 카테고리 -> OSM cuisine 태그 매핑
+    const cuisineMap = {
+      "한식": ["korean"],
+      "중식": ["chinese"],
+      "일식": ["japanese", "sushi", "ramen"],
+      "양식": ["italian", "pizza", "pasta", "western"],
+      "분식": ["korean"],
+      "패스트푸드": ["burger", "chicken", "fast_food"]
+    };
+
+    const statusEl = () => document.getElementById("finderStatus");
+    function setStatus(msg, isError) {
+      const el = statusEl();
+      el.textContent = msg;
+      el.classList.toggle("error", !!isError);
+    }
+
+    // 두 좌표 사이 직선거리(m) - Haversine
+    function distanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = d => d * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+    function formatDistance(m) {
+      return m < 1000 ? `${Math.round(m)}m` : `${(m / 1000).toFixed(1)}km`;
+    }
+
+    // 주소/지역명 -> 좌표 (Nominatim)
+    async function geocode(query) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+      const res = await fetch(url, { headers: { "Accept-Language": "ko" } });
+      if (!res.ok) throw new Error("지오코딩 요청 실패");
+      const data = await res.json();
+      if (!data.length) return null;
+      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), label: data[0].display_name };
+    }
+
+    // Overpass 요청 (여러 미러 서버에 순서대로 시도)
+    const overpassEndpoints = [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter",
+      "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+    ];
+    async function overpassQuery(q) {
+      let lastErr;
+      for (const endpoint of overpassEndpoints) {
+        try {
+          const res = await fetch(endpoint, { method: "POST", body: "data=" + encodeURIComponent(q) });
+          if (!res.ok) { lastErr = new Error("status " + res.status); continue; }
+          return await res.json();
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      throw lastErr || new Error("Overpass 요청 실패");
+    }
+
+    // 좌표 주변 식당 검색 (Overpass)
+    async function findRestaurants(lat, lon, category) {
+      const cuisines = cuisineMap[category] || [];
+      const radius = 2000; // 2km 반경
+      // fast_food 는 amenity 자체가 다르므로 분리 처리
+      const wantsFastFood = cuisines.includes("fast_food");
+      const cuisineRegex = cuisines.filter(c => c !== "fast_food").join("|");
+      let filters = "";
+      if (cuisineRegex) {
+        filters += `
+          node["amenity"="restaurant"]["cuisine"~"${cuisineRegex}"](around:${radius},${lat},${lon});
+          way["amenity"="restaurant"]["cuisine"~"${cuisineRegex}"](around:${radius},${lat},${lon});`;
+      }
+      if (wantsFastFood || cuisineRegex) {
+        filters += `
+          node["amenity"="fast_food"]["cuisine"~"${cuisines.join("|")}"](around:${radius},${lat},${lon});`;
+      }
+      // cuisine 태그가 없는 식당도 일부 포함 (음식점 일반)
+      filters += `
+        node["amenity"="restaurant"]["name"](around:${Math.round(radius/2)},${lat},${lon});`;
+
+      const q = `[out:json][timeout:25];(${filters});out center 40;`;
+      const data = await overpassQuery(q);
+
+      const seen = new Set();
+      const results = [];
+      for (const el of data.elements) {
+        const name = el.tags && el.tags.name;
+        if (!name || seen.has(name)) continue;
+        seen.add(name);
+        const rlat = el.lat || (el.center && el.center.lat);
+        const rlon = el.lon || (el.center && el.center.lon);
+        if (rlat == null || rlon == null) continue;
+        results.push({
+          name,
+          cuisine: (el.tags.cuisine || "").replace(/_/g, " "),
+          address: el.tags["addr:full"] || [el.tags["addr:street"], el.tags["addr:housenumber"]].filter(Boolean).join(" "),
+          lat: rlat, lon: rlon,
+          dist: distanceMeters(lat, lon, rlat, rlon)
+        });
+      }
+      results.sort((a, b) => a.dist - b.dist);
+      return results.slice(0, 10);
+    }
+
+    function renderRestaurants(list) {
+      const ul = document.getElementById("restaurantList");
+      if (!list.length) {
+        ul.innerHTML = "";
+        setStatus("주변 2km 안에서 해당 메뉴를 파는 식당을 찾지 못했어요. 다른 위치나 메뉴로 시도해보세요.");
+        return;
+      }
+      ul.innerHTML = list.map((r, i) => {
+        const metaParts = [];
+        if (r.cuisine) metaParts.push(r.cuisine);
+        if (r.address) metaParts.push(r.address);
+        const meta = metaParts.join(" · ") || "상세 정보 없음";
+        const mapUrl = `https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lon}#map=18/${r.lat}/${r.lon}`;
+        return `
+          <li class="restaurant-item">
+            <div class="rank">${i + 1}</div>
+            <div class="rest-body">
+              <div class="rest-name">${escapeHtml(r.name)}</div>
+              <div class="rest-meta">${escapeHtml(meta)}</div>
+            </div>
+            <div class="rest-dist">${formatDistance(r.dist)}</div>
+            <a class="map-link" href="${mapUrl}" target="_blank" rel="noopener" title="지도에서 보기">🗺️</a>
+          </li>`;
+      }).join("");
+      setStatus(`가까운 식당 ${list.length}곳을 찾았어요.`);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    async function searchFromCoords(lat, lon) {
+      if (!lastPick) { setStatus("먼저 메뉴를 추천받아 주세요.", true); return; }
+      const btn = document.getElementById("findBtn");
+      btn.disabled = true;
+      setStatus("주변 식당을 찾고 있어요...");
+      try {
+        const list = await findRestaurants(lat, lon, lastPick.category);
+        renderRestaurants(list);
+      } catch (e) {
+        setStatus("식당 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.", true);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById("findBtn").addEventListener("click", async () => {
+      const query = document.getElementById("locationInput").value.trim();
+      if (!query) { setStatus("위치를 입력해주세요.", true); return; }
+      if (!lastPick) { setStatus("먼저 메뉴를 추천받아 주세요.", true); return; }
+      const btn = document.getElementById("findBtn");
+      btn.disabled = true;
+      setStatus("입력한 위치를 찾고 있어요...");
+      try {
+        const geo = await geocode(query);
+        if (!geo) { setStatus("위치를 찾지 못했어요. 더 구체적으로 입력해보세요.", true); btn.disabled = false; return; }
+        await searchFromCoords(geo.lat, geo.lon);
+      } catch (e) {
+        setStatus("위치 검색에 실패했어요. 잠시 후 다시 시도해주세요.", true);
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("geoBtn").addEventListener("click", () => {
+      if (!lastPick) { setStatus("먼저 메뉴를 추천받아 주세요.", true); return; }
+      if (!navigator.geolocation) { setStatus("이 브라우저에서는 현재 위치를 쓸 수 없어요.", true); return; }
+      setStatus("현재 위치를 확인하고 있어요...");
+      navigator.geolocation.getCurrentPosition(
+        pos => searchFromCoords(pos.coords.latitude, pos.coords.longitude),
+        () => setStatus("위치 권한이 거부되었어요. 주소를 직접 입력해주세요.", true)
+      );
+    });
+
+    document.getElementById("locationInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") document.getElementById("findBtn").click();
     });
 
     // 초기 렌더링: 저장된 좋아요 목록 표시
