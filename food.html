@@ -1,0 +1,236 @@
+[today_food_picker.html](https://github.com/user-attachments/files/34230758/today_food_picker.html)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오늘 뭐 먹지? 🍽️</title>
+  <style>
+    :root {
+      --ink: #29251f;
+      --muted: #81796f;
+      --paper: #fffaf2;
+      --card: #ffffff;
+      --orange: #f07843;
+      --orange-dark: #d95f2d;
+      --line: #f0e7dc;
+      --green: #537b5b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--ink);
+      font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+      background:
+        radial-gradient(circle at 8% 8%, #ffe7d4 0, transparent 25rem),
+        radial-gradient(circle at 95% 35%, #f5e8ce 0, transparent 23rem),
+        var(--paper);
+    }
+    .wrap { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 60px; }
+    header { text-align: center; margin-bottom: 28px; }
+    .eyebrow { display: inline-block; padding: 7px 13px; border-radius: 99px; background: #fff0e5; color: var(--orange-dark); font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+    h1 { font-size: clamp(34px, 7vw, 58px); line-height: 1.12; margin: 16px 0 10px; letter-spacing: -.06em; }
+    h1 span { color: var(--orange); }
+    header p { color: var(--muted); margin: 0; font-size: 15px; }
+    .panel { background: rgba(255,255,255,.88); border: 1px solid var(--line); border-radius: 24px; padding: 26px; box-shadow: 0 14px 40px rgba(94,64,35,.07); }
+    .section-title { font-size: 16px; font-weight: 800; margin: 0 0 14px; }
+    .categories { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 24px; }
+    .chip {
+      border: 1px solid var(--line); background: #fff; color: #655d53; border-radius: 99px;
+      padding: 10px 15px; font-size: 14px; font-weight: 700; cursor: pointer; transition: .18s;
+    }
+    .chip:hover { border-color: #f5b18f; transform: translateY(-1px); }
+    .chip.active { background: #fff0e7; border-color: #f4a47e; color: #c95226; }
+    .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 25px; }
+    .filter-box { background: #fffaf5; border: 1px solid var(--line); padding: 15px; border-radius: 16px; }
+    .filter-box label { display: block; font-size: 13px; font-weight: 800; margin-bottom: 9px; }
+    select { width: 100%; border: 1px solid #e9dfd3; background: white; padding: 11px 12px; border-radius: 10px; color: var(--ink); font: inherit; font-size: 14px; outline-color: #f2a17b; }
+    .actions { display: flex; gap: 10px; }
+    button { font: inherit; }
+    .recommend {
+      flex: 1; border: 0; border-radius: 14px; padding: 16px 20px; background: var(--orange);
+      color: white; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 7px 0 #d65f32;
+      transition: transform .12s, box-shadow .12s;
+    }
+    .recommend:hover { background: #eb6d38; }
+    .recommend:active { transform: translateY(4px); box-shadow: 0 3px 0 #d65f32; }
+    .reset { border: 1px solid var(--line); background: white; color: #756b60; border-radius: 14px; padding: 0 18px; font-weight: 800; cursor: pointer; }
+    .result { margin-top: 22px; display: none; overflow: hidden; }
+    .result.show { display: block; animation: rise .35s ease both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .result-inner { display: grid; grid-template-columns: 150px 1fr; gap: 22px; align-items: center; }
+    .food-emoji { width: 150px; height: 150px; display: grid; place-items: center; background: #fff0e5; border-radius: 22px; font-size: 76px; }
+    .result-label { color: var(--orange-dark); font-size: 12px; font-weight: 900; letter-spacing: .1em; }
+    .food-name { font-size: clamp(27px, 5vw, 38px); margin: 7px 0; letter-spacing: -.05em; }
+    .food-desc { color: var(--muted); line-height: 1.65; margin: 0 0 13px; font-size: 14px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 7px; }
+    .tag { background: #f7f2eb; color: #756b60; padding: 6px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; }
+    .result-actions { display: flex; gap: 9px; margin-top: 18px; }
+    .small-btn { border: 1px solid var(--line); background: white; color: #5d554c; border-radius: 11px; padding: 10px 13px; cursor: pointer; font-size: 13px; font-weight: 800; }
+    .small-btn:hover { background: #fff6ef; }
+    .hint { text-align: center; color: #a69b8e; font-size: 12px; margin: 18px 0 0; }
+    footer { text-align: center; color: #a69b8e; font-size: 12px; padding-top: 25px; }
+    @media (max-width: 600px) {
+      .wrap { padding-top: 30px; }
+      .panel { padding: 19px; border-radius: 20px; }
+      .filters { grid-template-columns: 1fr; gap: 10px; }
+      .result-inner { grid-template-columns: 1fr; gap: 14px; text-align: center; }
+      .food-emoji { width: 100%; height: 130px; font-size: 66px; }
+      .tags, .result-actions { justify-content: center; }
+      .actions { flex-direction: column; }
+      .reset { padding: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div class="eyebrow">YOUR DAILY FOOD PICKER</div>
+      <h1>오늘 뭐 먹지<span>?</span> 🍽️</h1>
+      <p>고민은 내가 할게요. 맛있는 한 끼만 즐겨요!</p>
+    </header>
+
+    <section class="panel" aria-label="음식 추천 조건">
+      <h2 class="section-title">1. 어떤 음식이 끌리나요?</h2>
+      <div class="categories" id="categories">
+        <button class="chip active" data-category="전체">🍴 전체</button>
+        <button class="chip" data-category="한식">🍚 한식</button>
+        <button class="chip" data-category="중식">🥢 중식</button>
+        <button class="chip" data-category="일식">🍣 일식</button>
+        <button class="chip" data-category="양식">🍝 양식</button>
+        <button class="chip" data-category="분식">🍢 분식</button>
+        <button class="chip" data-category="패스트푸드">🍔 패스트푸드</button>
+      </div>
+
+      <h2 class="section-title">2. 취향을 알려주세요</h2>
+      <div class="filters">
+        <div class="filter-box">
+          <label for="spicy">🌶️ 매운 정도</label>
+          <select id="spicy">
+            <option value="상관없음">상관없어요</option>
+            <option value="안 매운">안 매운 음식</option>
+            <option value="매콤">매콤한 음식</option>
+            <option value="아주 매운">아주 매운 음식</option>
+          </select>
+        </div>
+        <div class="filter-box">
+          <label for="budget">💸 예산</label>
+          <select id="budget">
+            <option value="상관없음">상관없어요</option>
+            <option value="저렴">1만원 이하</option>
+            <option value="보통">1~2만원</option>
+            <option value="여유">2만원 이상</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="recommend" id="pick">✨ 메뉴 추천받기</button>
+        <button class="reset" id="reset">초기화</button>
+      </div>
+      <p class="hint">선택한 조건에 맞는 메뉴를 무작위로 골라드려요.</p>
+    </section>
+
+    <section class="panel result" id="result" aria-live="polite">
+      <div class="result-inner">
+        <div class="food-emoji" id="emoji">🍜</div>
+        <div>
+          <div class="result-label">TODAY'S RECOMMENDATION</div>
+          <h2 class="food-name" id="foodName">메뉴 이름</h2>
+          <p class="food-desc" id="description"></p>
+          <div class="tags" id="tags"></div>
+          <div class="result-actions">
+            <button class="small-btn" id="again">🔄 다른 메뉴 추천</button>
+            <button class="small-btn" id="favorite">♡ 마음에 들어요</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <footer>오늘의 한 끼가 작은 행복이 되길 바랍니다 ♡</footer>
+  </main>
+
+  <script>
+    const foods = [
+      {name:"김치찌개", category:"한식", emoji:"🍲", spicy:"매콤", budget:"저렴", price:"약 8,000~10,000원", desc:"얼큰하고 따뜻한 국물에 밥 한 공기 뚝딱!", tags:["든든한 한 끼","국물 요리"]},
+      {name:"불고기 덮밥", category:"한식", emoji:"🍚", spicy:"안 매운", budget:"보통", price:"약 9,000~13,000원", desc:"달콤짭짤한 불고기를 밥 위에 듬뿍 올려 먹어요.", tags:["달콤짭짤","밥 메뉴"]},
+      {name:"비빔밥", category:"한식", emoji:"🥗", spicy:"매콤", budget:"저렴", price:"약 8,000~11,000원", desc:"다양한 나물과 고추장을 슥슥 비벼 먹는 건강한 메뉴.", tags:["든든한 한 끼","채소 듬뿍"]},
+      {name:"삼겹살", category:"한식", emoji:"🥓", spicy:"안 매운", budget:"여유", price:"약 15,000원 이상", desc:"노릇하게 구운 고기와 쌈 채소의 완벽한 조합!", tags:["고기파 추천","외식 메뉴"]},
+      {name:"순두부찌개", category:"한식", emoji:"🍲", spicy:"매콤", budget:"저렴", price:"약 8,000~11,000원", desc:"보들보들한 순두부와 칼칼한 국물이 매력적이에요.", tags:["따뜻한 국물","밥 메뉴"]},
+      {name:"짜장면", category:"중식", emoji:"🍜", spicy:"안 매운", budget:"저렴", price:"약 7,000~10,000원", desc:"달콤한 춘장 소스와 쫄깃한 면발의 클래식!", tags:["면 요리","국민 메뉴"]},
+      {name:"짬뽕", category:"중식", emoji:"🍜", spicy:"아주 매운", budget:"보통", price:"약 9,000~13,000원", desc:"해물과 채소가 어우러진 얼큰하고 시원한 국물.", tags:["얼큰한 국물","해물"]},
+      {name:"탕수육", category:"중식", emoji:"🥡", spicy:"안 매운", budget:"보통", price:"약 15,000원 이상", desc:"바삭한 튀김에 새콤달콤한 소스를 곁들여요.", tags:["바삭바삭","함께 먹기 좋아요"]},
+      {name:"마라탕", category:"중식", emoji:"🥘", spicy:"아주 매운", budget:"보통", price:"약 10,000~18,000원", desc:"얼얼하고 진한 마라 국물에 원하는 재료를 가득!", tags:["얼얼한 매운맛","취향대로"]},
+      {name:"초밥", category:"일식", emoji:"🍣", spicy:"안 매운", budget:"여유", price:"약 15,000원 이상", desc:"신선한 재료와 밥의 조화가 좋은 깔끔한 한 끼.", tags:["깔끔한 맛","해산물"]},
+      {name:"돈가스", category:"일식", emoji:"🍛", spicy:"안 매운", budget:"보통", price:"약 9,000~14,000원", desc:"겉은 바삭하고 속은 촉촉한 든든한 메뉴!", tags:["바삭바삭","든든한 한 끼"]},
+      {name:"라멘", category:"일식", emoji:"🍜", spicy:"상관없음", budget:"보통", price:"약 10,000~15,000원", desc:"진한 육수와 쫄깃한 면을 즐기는 따뜻한 한 그릇.", tags:["면 요리","따뜻한 국물"]},
+      {name:"규동", category:"일식", emoji:"🍚", spicy:"안 매운", budget:"보통", price:"약 8,000~12,000원", desc:"달짝지근한 소고기와 양파를 밥 위에 올린 덮밥.", tags:["간편한 한 끼","밥 메뉴"]},
+      {name:"파스타", category:"양식", emoji:"🍝", spicy:"상관없음", budget:"보통", price:"약 12,000~18,000원", desc:"오늘은 취향에 맞는 소스로 근사하게 즐겨봐요.", tags:["분위기 있는 한 끼","면 요리"]},
+      {name:"피자", category:"양식", emoji:"🍕", spicy:"안 매운", budget:"여유", price:"약 18,000원 이상", desc:"치즈가 쭉 늘어나는 맛있는 조각 한 판!", tags:["여럿이 먹기 좋아요","치즈"]},
+      {name:"햄버거", category:"패스트푸드", emoji:"🍔", spicy:"상관없음", budget:"저렴", price:"약 6,000~12,000원", desc:"패티와 채소, 소스가 어우러진 간편한 메뉴.", tags:["빠르게 먹기","간편식"]},
+      {name:"치킨", category:"패스트푸드", emoji:"🍗", spicy:"상관없음", budget:"여유", price:"약 18,000원 이상", desc:"바삭한 튀김옷과 촉촉한 속살은 언제나 옳아요.", tags:["함께 먹기 좋아요","바삭바삭"]},
+      {name:"떡볶이", category:"분식", emoji:"🍢", spicy:"매콤", budget:"저렴", price:"약 4,000~8,000원", desc:"쫀득한 떡과 매콤달콤한 양념의 중독적인 조합.", tags:["매콤달콤","간식 겸 식사"]},
+      {name:"김밥", category:"분식", emoji:"🍙", spicy:"안 매운", budget:"저렴", price:"약 3,500~6,000원", desc:"한입에 여러 재료를 즐길 수 있는 간편한 메뉴.", tags:["간편한 한 끼","가성비"]},
+      {name:"쫄면", category:"분식", emoji:"🥢", spicy:"매콤", budget:"저렴", price:"약 7,000~10,000원", desc:"새콤매콤한 양념과 쫄깃한 면발이 입맛을 깨워요.", tags:["새콤매콤","면 요리"]}
+    ];
+
+    let selectedCategory = "전체";
+    let lastPick = null;
+
+    document.querySelectorAll(".chip").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".chip").forEach(chip => chip.classList.remove("active"));
+        button.classList.add("active");
+        selectedCategory = button.dataset.category;
+      });
+    });
+
+    function recommendFood() {
+      const spicy = document.getElementById("spicy").value;
+      const budget = document.getElementById("budget").value;
+      let candidates = foods.filter(food => {
+        const categoryMatch = selectedCategory === "전체" || food.category === selectedCategory;
+        const spicyMatch = spicy === "상관없음" || food.spicy === spicy || food.spicy === "상관없음";
+        const budgetMatch = budget === "상관없음" || food.budget === budget;
+        return categoryMatch && spicyMatch && budgetMatch;
+      });
+
+      if (candidates.length === 0) {
+        alert("선택한 조건에 맞는 메뉴가 없어요. 조건을 조금 바꿔주세요!");
+        return;
+      }
+      if (candidates.length > 1 && lastPick) {
+        const alternatives = candidates.filter(food => food.name !== lastPick.name);
+        if (alternatives.length) candidates = alternatives;
+      }
+      const choice = candidates[Math.floor(Math.random() * candidates.length)];
+      lastPick = choice;
+
+      document.getElementById("emoji").textContent = choice.emoji;
+      document.getElementById("foodName").textContent = choice.name;
+      document.getElementById("description").textContent = `${choice.desc} ${choice.price}`;
+      document.getElementById("tags").innerHTML =
+        [choice.category, choice.spicy === "상관없음" ? "맵기 선택 가능" : choice.spicy, ...choice.tags]
+          .map(tag => `<span class="tag">${tag}</span>`).join("");
+      const result = document.getElementById("result");
+      result.classList.remove("show");
+      void result.offsetWidth;
+      result.classList.add("show");
+      document.getElementById("favorite").textContent = "♡ 마음에 들어요";
+      result.scrollIntoView({behavior:"smooth", block:"nearest"});
+    }
+
+    document.getElementById("pick").addEventListener("click", recommendFood);
+    document.getElementById("again").addEventListener("click", recommendFood);
+    document.getElementById("favorite").addEventListener("click", function() {
+      if (!lastPick) return;
+      this.textContent = this.textContent.startsWith("♥") ? "♡ 마음에 들어요" : "♥ 저장했어요!";
+    });
+    document.getElementById("reset").addEventListener("click", () => {
+      selectedCategory = "전체";
+      document.querySelectorAll(".chip").forEach(chip => chip.classList.toggle("active", chip.dataset.category === "전체"));
+      document.getElementById("spicy").value = "상관없음";
+      document.getElementById("budget").value = "상관없음";
+      document.getElementById("result").classList.remove("show");
+      lastPick = null;
+    });
+  </script>
+</body>
+</html>
