@@ -67,6 +67,20 @@
     .small-btn { border: 1px solid var(--line); background: white; color: #5d554c; border-radius: 11px; padding: 10px 13px; cursor: pointer; font-size: 13px; font-weight: 800; }
     .small-btn:hover { background: #fff6ef; }
     .hint { text-align: center; color: #a69b8e; font-size: 12px; margin: 18px 0 0; }
+    .favorites { margin-top: 22px; }
+    .favorites-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .fav-count { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 99px; background: #fff0e7; color: #c95226; font-size: 13px; font-weight: 900; margin-left: 4px; vertical-align: middle; }
+    .clear-fav { border: 1px solid var(--line); background: white; color: #a0948a; border-radius: 11px; padding: 8px 13px; font-size: 13px; font-weight: 800; cursor: pointer; }
+    .clear-fav:hover { background: #fff6ef; color: #c95226; }
+    .fav-empty { color: #a69b8e; font-size: 14px; margin: 0; line-height: 1.6; }
+    .fav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .fav-item { display: flex; align-items: center; gap: 13px; background: #fffaf5; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; animation: rise .25s ease both; }
+    .fav-item .fav-emoji { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: #fff0e5; border-radius: 12px; font-size: 26px; }
+    .fav-item .fav-body { flex: 1; min-width: 0; }
+    .fav-item .fav-name { font-weight: 800; font-size: 15px; }
+    .fav-item .fav-meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .fav-item .fav-remove { border: 0; background: transparent; color: #c6b9ab; font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 6px; border-radius: 8px; flex: none; }
+    .fav-item .fav-remove:hover { background: #fdeee7; color: #d95f2d; }
     footer { text-align: center; color: #a69b8e; font-size: 12px; padding-top: 25px; }
     @media (max-width: 600px) {
       .wrap { padding-top: 30px; }
@@ -152,6 +166,16 @@
         </div>
       </div>
     </section>
+
+    <section class="panel favorites" id="favorites" aria-label="마음에 든 메뉴">
+      <div class="favorites-head">
+        <h2 class="section-title" style="margin:0;">❤️ 마음에 든 메뉴 <span class="fav-count" id="favCount">0</span></h2>
+        <button class="clear-fav" id="clearFav">전체 비우기</button>
+      </div>
+      <p class="fav-empty" id="favEmpty">아직 저장한 메뉴가 없어요. 추천 결과에서 '♡ 마음에 들어요'를 눌러보세요!</p>
+      <ul class="fav-list" id="favList"></ul>
+    </section>
+
     <footer>오늘의 한 끼가 작은 행복이 되길 바랍니다 ♡</footer>
   </main>
 
@@ -181,6 +205,58 @@
 
     let selectedCategory = "전체";
     let lastPick = null;
+
+    const FAV_KEY = "foodPicker.favorites";
+    let favorites = loadFavorites();
+
+    function loadFavorites() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(FAV_KEY));
+        return Array.isArray(saved) ? saved : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    function saveFavorites() {
+      try { localStorage.setItem(FAV_KEY, JSON.stringify(favorites)); } catch (e) {}
+    }
+    function isFavorite(name) {
+      return favorites.some(food => food.name === name);
+    }
+    function renderFavorites() {
+      const list = document.getElementById("favList");
+      const empty = document.getElementById("favEmpty");
+      const clearBtn = document.getElementById("clearFav");
+      document.getElementById("favCount").textContent = favorites.length;
+      empty.style.display = favorites.length ? "none" : "block";
+      clearBtn.style.display = favorites.length ? "inline-block" : "none";
+      list.innerHTML = favorites.map(food => `
+        <li class="fav-item">
+          <div class="fav-emoji">${food.emoji}</div>
+          <div class="fav-body">
+            <div class="fav-name">${food.name}</div>
+            <div class="fav-meta">${food.category} · ${food.price}</div>
+          </div>
+          <button class="fav-remove" data-name="${food.name}" title="삭제" aria-label="${food.name} 삭제">×</button>
+        </li>`).join("");
+      list.querySelectorAll(".fav-remove").forEach(btn => {
+        btn.addEventListener("click", () => removeFavorite(btn.dataset.name));
+      });
+    }
+    function removeFavorite(name) {
+      favorites = favorites.filter(food => food.name !== name);
+      saveFavorites();
+      renderFavorites();
+      if (lastPick && lastPick.name === name) updateFavoriteButton();
+    }
+    function updateFavoriteButton() {
+      const btn = document.getElementById("favorite");
+      if (lastPick && isFavorite(lastPick.name)) {
+        btn.textContent = "♥ 저장했어요!";
+      } else {
+        btn.textContent = "♡ 마음에 들어요";
+      }
+    }
 
     document.querySelectorAll(".chip").forEach(button => {
       button.addEventListener("click", () => {
@@ -238,7 +314,7 @@
       result.classList.remove("show");
       void result.offsetWidth;
       result.classList.add("show");
-      document.getElementById("favorite").textContent = "♡ 마음에 들어요";
+      updateFavoriteButton();
       result.scrollIntoView({behavior:"smooth", block:"nearest"});
     }
 
@@ -246,7 +322,25 @@
     document.getElementById("again").addEventListener("click", recommendFood);
     document.getElementById("favorite").addEventListener("click", function() {
       if (!lastPick) return;
-      this.textContent = this.textContent.startsWith("♥") ? "♡ 마음에 들어요" : "♥ 저장했어요!";
+      if (isFavorite(lastPick.name)) {
+        removeFavorite(lastPick.name);
+      } else {
+        favorites.push({
+          name: lastPick.name, emoji: lastPick.emoji,
+          category: lastPick.category, price: lastPick.price
+        });
+        saveFavorites();
+        renderFavorites();
+      }
+      updateFavoriteButton();
+    });
+    document.getElementById("clearFav").addEventListener("click", () => {
+      if (!favorites.length) return;
+      if (!confirm("저장한 메뉴를 모두 비울까요?")) return;
+      favorites = [];
+      saveFavorites();
+      renderFavorites();
+      updateFavoriteButton();
     });
     document.getElementById("reset").addEventListener("click", () => {
       selectedCategory = "전체";
@@ -257,6 +351,9 @@
       document.getElementById("result").classList.remove("show");
       lastPick = null;
     });
+
+    // 초기 렌더링: 저장된 좋아요 목록 표시
+    renderFavorites();
   </script>
 </body>
 </html>
