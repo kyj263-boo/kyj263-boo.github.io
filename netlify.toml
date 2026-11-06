@@ -14,8 +14,9 @@
 [functions]
   node_bundler = "esbuild"
 
-# SPA가 아니므로 리다이렉트는 최소화. food.html을 기본 진입점처럼 쓰고 싶으면 아래 주석 해제.
-# [[redirects]]
-#   from = "/"
-#   to = "/food.html"
-#   status = 302
+# 루트(/)로 접속하면 홈페이지인 food.html을 보여준다.
+# index.html(게임)은 그대로 보존되며 /index.html 로 접근 가능하다.
+[[redirects]]
+  from = "/"
+  to = "/food.html"
+  status = 302
