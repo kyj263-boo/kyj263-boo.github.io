@@ -11,8 +11,10 @@
   NODE_VERSION = "20"
 
 # 함수 디렉터리 (기본 Node 런타임)
+# @supabase/supabase-js 를 번들에 확실히 포함시켜 배포 환경에서 import 누락을 방지한다.
 [functions]
   node_bundler = "esbuild"
+  external_node_modules = ["@supabase/supabase-js"]
 
 # 루트(/) 첫 화면은 빌드 단계에서 public/index.html을 food.html 내용으로 덮어써서 처리한다.
 # (scripts/build.mjs 참고) 따라서 별도 리다이렉트는 두지 않는다.
