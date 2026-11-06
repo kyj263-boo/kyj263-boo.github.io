@@ -72,6 +72,14 @@ async function main() {
   await fs.mkdir(outDir, { recursive: true });
   await copyPublic(root, outDir);
 
+  // 루트(/) 첫 화면을 food.html로 만든다.
+  // 소스 index.html(게임)은 건드리지 않고, 공개 산출물의 index.html만 food.html 내용으로 덮어쓴다.
+  // => Netlify 기본 주소로 접속하면 food 화면이 뜨고, public/index.html == food.html 이 된다.
+  const foodSrc = path.join(root, "food.html");
+  const indexOut = path.join(outDir, "index.html");
+  await fs.copyFile(foodSrc, indexOut);
+  console.log("override: public/index.html <= food.html (루트 첫 화면)");
+
   const files = [];
   async function walk(dir) {
     for (const e of await fs.readdir(dir, { withFileTypes: true })) {
