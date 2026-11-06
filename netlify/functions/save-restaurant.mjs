@@ -1,10 +1,10 @@
 // 식당 저장 (Netlify 서버 함수)
 // 브라우저 → 이 함수 → Supabase REST API 순서로 저장한다.
 //
-// - Supabase Publishable(anon) 키만 사용한다. service_role/secret 키는 사용하지 않는다.
-// - 키와 URL은 Netlify 환경변수(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)로만 읽는다.
+// - Supabase 서버용 Secret 키를 사용한다. 이 키는 서버(이 함수)에서만 쓰며 브라우저에 노출하지 않는다.
+// - 키와 URL은 Netlify 환경변수(SUPABASE_URL, SUPABASE_SECRET_KEY)로만 읽는다 (코드/Git/공개 빌드에 값 없음).
 // - 외부 패키지 없이 Node 내장 fetch로 REST API를 호출한다.
-// - INSERT만 수행한다. DELETE/UPDATE는 하지 않는다 (RLS의 기존 insert 정책만 사용).
+// - INSERT만 수행한다. DELETE/UPDATE는 하지 않는다.
 //
 // 호출: POST /.netlify/functions/save-restaurant
 // body(JSON): { restaurant_name, menu_name, menu_emoji, category, cuisine, address, lat, lon }
@@ -24,7 +24,7 @@ export default async function handler(req) {
   }
 
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) {
     return json(500, { ok: false, error: "서버 설정 오류입니다. (환경변수 확인 필요)" });
   }
@@ -36,7 +36,7 @@ export default async function handler(req) {
   const name = typeof payload?.restaurant_name === "string" ? payload.restaurant_name.trim() : "";
   const menuName = typeof payload?.menu_name === "string" ? payload.menu_name.trim() : "";
   if (!name) return json(400, { ok: false, error: "식당 이름을 입력해주세요." });
-  if (!menuName) return json(400, { ok: false, error: "먼저 메뉴를 추천받아 주세요." });
+  if (!menuName) return json(400, { ok: false, error: "추천 메뉴를 입력해주세요." });
 
   // 저장할 레코드 (허용된 컬럼만; 클라이언트가 보낸 값은 신뢰하지 않고 선별)
   const record = {
