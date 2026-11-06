@@ -1,0 +1,11 @@
+{
+  "name": "food-picker-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "오늘 뭐 먹지? - 음식/식당 추천 정적 사이트 (Netlify 배포)",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "license": "UNLICENSED"
+}

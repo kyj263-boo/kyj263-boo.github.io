@@ -1,0 +1,20 @@
+# 의존성
+node_modules/
+
+# 빌드 출력 (Netlify가 빌드 시 생성)
+public/
+
+# Netlify 로컬 상태
+.netlify/
+
+# 환경변수 / 비밀
+.env
+.env.*
+*.secret.*
+
+# OS 부산물
+.DS_Store
+Thumbs.db
+# 개인 설정 / 기록 (공개 제외)
+.kiro/
+docs/

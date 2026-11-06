@@ -1,0 +1,21 @@
+# Netlify 배포 설정
+# - publish: 공개 출력 폴더 (빌드 스크립트가 생성). 서버 함수는 여기에 복사하지 않는다.
+# - functions: 서버리스 함수 소스 폴더. publish 폴더와 분리되어 공개 출력에 섞이지 않는다.
+
+[build]
+  command = "npm run build"
+  publish = "public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# 함수 디렉터리 (기본 Node 런타임)
+[functions]
+  node_bundler = "esbuild"
+
+# SPA가 아니므로 리다이렉트는 최소화. food.html을 기본 진입점처럼 쓰고 싶으면 아래 주석 해제.
+# [[redirects]]
+#   from = "/"
+#   to = "/food.html"
+#   status = 302
