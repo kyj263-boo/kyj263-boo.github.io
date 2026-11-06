@@ -67,20 +67,6 @@
     .small-btn { border: 1px solid var(--line); background: white; color: #5d554c; border-radius: 11px; padding: 10px 13px; cursor: pointer; font-size: 13px; font-weight: 800; }
     .small-btn:hover { background: #fff6ef; }
     .hint { text-align: center; color: #a69b8e; font-size: 12px; margin: 18px 0 0; }
-    .favorites { margin-top: 22px; }
-    .favorites-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-    .fav-count { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 99px; background: #fff0e7; color: #c95226; font-size: 13px; font-weight: 900; margin-left: 4px; vertical-align: middle; }
-    .clear-fav { border: 1px solid var(--line); background: white; color: #a0948a; border-radius: 11px; padding: 8px 13px; font-size: 13px; font-weight: 800; cursor: pointer; }
-    .clear-fav:hover { background: #fff6ef; color: #c95226; }
-    .fav-empty { color: #a69b8e; font-size: 14px; margin: 0; line-height: 1.6; }
-    .fav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-    .fav-item { display: flex; align-items: center; gap: 13px; background: #fffaf5; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; animation: rise .25s ease both; }
-    .fav-item .fav-emoji { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: #fff0e5; border-radius: 12px; font-size: 26px; }
-    .fav-item .fav-body { flex: 1; min-width: 0; }
-    .fav-item .fav-name { font-weight: 800; font-size: 15px; }
-    .fav-item .fav-meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
-    .fav-item .fav-remove { border: 0; background: transparent; color: #c6b9ab; font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 6px; border-radius: 8px; flex: none; }
-    .fav-item .fav-remove:hover { background: #fdeee7; color: #d95f2d; }
     .restaurant-finder { margin-top: 24px; padding-top: 22px; border-top: 1px dashed var(--line); }
     .finder-title { font-size: 16px; font-weight: 800; margin: 0 0 6px; }
     .finder-desc { color: var(--muted); font-size: 13px; margin: 0 0 14px; line-height: 1.6; }
@@ -119,14 +105,20 @@
     .saved-status { font-size: 13px; color: var(--muted); margin: 0 0 12px; min-height: 1px; }
     .saved-status.error { color: #c0453a; }
     .saved-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-    .saved-item { display: flex; align-items: center; gap: 13px; background: #fbf7f0; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; animation: rise .25s ease both; }
-    .saved-item .saved-emoji { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: #fff0e5; border-radius: 12px; font-size: 24px; }
+    .saved-item { display: flex; align-items: center; gap: 15px; background: #fbf7f0; border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; animation: rise .25s ease both; }
+    .saved-item .saved-emoji { width: 56px; height: 56px; flex: none; display: grid; place-items: center; background: #fff0e5; border-radius: 14px; font-size: 32px; }
     .saved-item .saved-body { flex: 1; min-width: 0; }
-    .saved-item .saved-name { font-weight: 800; font-size: 15px; }
-    .saved-item .saved-meta { color: var(--muted); font-size: 12px; margin-top: 2px; word-break: keep-all; }
+    .saved-item .saved-name { font-weight: 800; font-size: 21px; letter-spacing: -.02em; }
+    .saved-item .saved-meta { color: #6b6258; font-size: 15px; margin-top: 4px; word-break: keep-all; line-height: 1.5; }
     .saved-item .saved-map { flex: none; text-decoration: none; font-size: 18px; padding: 4px; border-radius: 8px; }
     .saved-item .saved-map:hover { background: #f0e7dc; }
-    .saved-empty { color: #a69b8e; font-size: 14px; margin: 0; line-height: 1.6; }
+    .like-btn { flex: none; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 9px 14px; cursor: pointer; font: inherit; font-weight: 800; font-size: 16px; color: #d14b6a; transition: .15s; }
+    .like-btn:hover:not(:disabled) { background: #fff0f3; border-color: #f2b6c3; transform: translateY(-1px); }
+    .like-btn:disabled { cursor: default; }
+    .like-btn.liked { background: #ffeef2; border-color: #f2b6c3; }
+    .like-btn .like-heart { font-size: 18px; line-height: 1; }
+    .like-btn .like-count { min-width: 14px; text-align: center; }
+    .saved-empty { color: #a69b8e; font-size: 15px; margin: 0; line-height: 1.6; }
     footer { text-align: center; color: #a69b8e; font-size: 12px; padding-top: 25px; }
     @media (max-width: 600px) {
       .wrap { padding-top: 30px; }
@@ -209,7 +201,6 @@
           <div class="tags" id="tags"></div>
           <div class="result-actions">
             <button class="small-btn" id="again">🔄 다른 메뉴 추천</button>
-            <button class="small-btn" id="favorite">♡ 마음에 들어요</button>
           </div>
         </div>
       </div>
@@ -249,15 +240,6 @@
       </div>
     </section>
 
-    <section class="panel favorites" id="favorites" aria-label="마음에 든 메뉴">
-      <div class="favorites-head">
-        <h2 class="section-title" style="margin:0;">❤️ 마음에 든 메뉴 <span class="fav-count" id="favCount">0</span></h2>
-        <button class="clear-fav" id="clearFav">전체 비우기</button>
-      </div>
-      <p class="fav-empty" id="favEmpty">아직 저장한 메뉴가 없어요. 추천 결과에서 '♡ 마음에 들어요'를 눌러보세요!</p>
-      <ul class="fav-list" id="favList"></ul>
-    </section>
-
     <footer>오늘의 한 끼가 작은 행복이 되길 바랍니다 ♡</footer>
   </main>
 
@@ -288,57 +270,6 @@
     let selectedCategory = "전체";
     let lastPick = null;
 
-    const FAV_KEY = "foodPicker.favorites";
-    let favorites = loadFavorites();
-
-    function loadFavorites() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(FAV_KEY));
-        return Array.isArray(saved) ? saved : [];
-      } catch (e) {
-        return [];
-      }
-    }
-    function saveFavorites() {
-      try { localStorage.setItem(FAV_KEY, JSON.stringify(favorites)); } catch (e) {}
-    }
-    function isFavorite(name) {
-      return favorites.some(food => food.name === name);
-    }
-    function renderFavorites() {
-      const list = document.getElementById("favList");
-      const empty = document.getElementById("favEmpty");
-      const clearBtn = document.getElementById("clearFav");
-      document.getElementById("favCount").textContent = favorites.length;
-      empty.style.display = favorites.length ? "none" : "block";
-      clearBtn.style.display = favorites.length ? "inline-block" : "none";
-      list.innerHTML = favorites.map(food => `
-        <li class="fav-item">
-          <div class="fav-emoji">${food.emoji}</div>
-          <div class="fav-body">
-            <div class="fav-name">${food.name}</div>
-            <div class="fav-meta">${food.category} · ${food.price}</div>
-          </div>
-          <button class="fav-remove" data-name="${food.name}" title="삭제" aria-label="${food.name} 삭제">×</button>
-        </li>`).join("");
-      list.querySelectorAll(".fav-remove").forEach(btn => {
-        btn.addEventListener("click", () => removeFavorite(btn.dataset.name));
-      });
-    }
-    function removeFavorite(name) {
-      favorites = favorites.filter(food => food.name !== name);
-      saveFavorites();
-      renderFavorites();
-      if (lastPick && lastPick.name === name) updateFavoriteButton();
-    }
-    function updateFavoriteButton() {
-      const btn = document.getElementById("favorite");
-      if (lastPick && isFavorite(lastPick.name)) {
-        btn.textContent = "♥ 저장했어요!";
-      } else {
-        btn.textContent = "♡ 마음에 들어요";
-      }
-    }
 
     document.querySelectorAll(".chip").forEach(button => {
       button.addEventListener("click", () => {
@@ -396,7 +327,6 @@
       result.classList.remove("show");
       void result.offsetWidth;
       result.classList.add("show");
-      updateFavoriteButton();
       // 메뉴가 바뀌면 식당 찾기 영역 갱신
       document.getElementById("finderFood").textContent = choice.name;
       document.getElementById("restaurantList").innerHTML = "";
@@ -407,28 +337,6 @@
 
     document.getElementById("pick").addEventListener("click", recommendFood);
     document.getElementById("again").addEventListener("click", recommendFood);
-    document.getElementById("favorite").addEventListener("click", function() {
-      if (!lastPick) return;
-      if (isFavorite(lastPick.name)) {
-        removeFavorite(lastPick.name);
-      } else {
-        favorites.push({
-          name: lastPick.name, emoji: lastPick.emoji,
-          category: lastPick.category, price: lastPick.price
-        });
-        saveFavorites();
-        renderFavorites();
-      }
-      updateFavoriteButton();
-    });
-    document.getElementById("clearFav").addEventListener("click", () => {
-      if (!favorites.length) return;
-      if (!confirm("저장한 메뉴를 모두 비울까요?")) return;
-      favorites = [];
-      saveFavorites();
-      renderFavorites();
-      updateFavoriteButton();
-    });
     document.getElementById("reset").addEventListener("click", () => {
       selectedCategory = "전체";
       document.querySelectorAll(".chip").forEach(chip => chip.classList.toggle("active", chip.dataset.category === "전체"));
@@ -685,8 +593,6 @@
       );
     });
 
-    // 초기 렌더링: 저장된 좋아요 목록 표시 (localStorage - 기존 기능 유지)
-    renderFavorites();
 
     // ===== Supabase 연동: 추천 식당 공유 저장/조회 =====
     // 아래 두 값은 공개(publishable/anon) 키로, 브라우저에 넣어도 되는 공개 정보입니다.
@@ -703,6 +609,9 @@
       return supabaseClient;
     }
 
+    // 현재 표시 중인 추천 맛집 목록
+    let savedRows = [];
+
     function setSavedStatus(msg, isError) {
       const el = document.getElementById("savedStatus");
       el.textContent = msg || "";
@@ -712,23 +621,19 @@
     function renderSavedRestaurants(rows) {
       const ul = document.getElementById("savedList");
       const empty = document.getElementById("savedEmpty");
-      if (!rows || !rows.length) {
+      savedRows = Array.isArray(rows) ? rows : [];
+      if (!savedRows.length) {
         ul.innerHTML = "";
         empty.style.display = "block";
         return;
       }
       empty.style.display = "none";
-      ul.innerHTML = rows.map(r => {
+      ul.innerHTML = savedRows.map(r => {
         const metaParts = [];
         if (r.menu_name) metaParts.push(`추천 메뉴: ${r.menu_name}`);
-        if (r.cuisine) metaParts.push(r.cuisine);
         if (r.address) metaParts.push(r.address);
         const meta = metaParts.join(" · ") || "상세 정보 없음";
-        const hasCoord = r.lat != null && r.lon != null;
-        const mapUrl = hasCoord
-          ? `https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lon}#map=18/${r.lat}/${r.lon}` : "";
-        const mapLink = hasCoord
-          ? `<a class="saved-map" href="${mapUrl}" target="_blank" rel="noopener" title="지도에서 보기">🗺️</a>` : "";
+        const likes = Number.isFinite(r.likes) ? r.likes : 0;
         return `
           <li class="saved-item">
             <div class="saved-emoji">${escapeHtml(r.menu_emoji || "🍽️")}</div>
@@ -736,9 +641,46 @@
               <div class="saved-name">${escapeHtml(r.restaurant_name || "이름 없는 식당")}</div>
               <div class="saved-meta">${escapeHtml(meta)}</div>
             </div>
-            ${mapLink}
+            <button class="like-btn" data-id="${escapeHtml(r.id)}" title="좋아요">
+              <span class="like-heart">🤍</span>
+              <span class="like-count">${likes}</span>
+            </button>
           </li>`;
       }).join("");
+      ul.querySelectorAll(".like-btn").forEach(btn => {
+        btn.addEventListener("click", () => likeRestaurant(btn.dataset.id, btn));
+      });
+    }
+
+    // 좋아요: Netlify 서버 함수(like-restaurant)를 거쳐 DB의 likes를 +1
+    const likedThisSession = new Set();
+    async function likeRestaurant(id, btn) {
+      if (!id || likedThisSession.has(id)) return; // 세션 내 중복 클릭 방지
+      const countEl = btn.querySelector(".like-count");
+      const heartEl = btn.querySelector(".like-heart");
+      btn.disabled = true;
+      try {
+        const res = await fetch("/.netlify/functions/like-restaurant", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id })
+        });
+        let body = {};
+        try { body = await res.json(); } catch {}
+        if (!res.ok || !body.ok) {
+          setSavedStatus(body.error || "좋아요에 실패했어요. 잠시 후 다시 시도해주세요.", true);
+          btn.disabled = false;
+          return;
+        }
+        // 성공: 화면 숫자 +1, 하트 채움
+        likedThisSession.add(id);
+        if (countEl) countEl.textContent = (parseInt(countEl.textContent, 10) || 0) + 1;
+        if (heartEl) heartEl.textContent = "❤️";
+        btn.classList.add("liked");
+      } catch (e) {
+        setSavedStatus("좋아요 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요.", true);
+        btn.disabled = false;
+      }
     }
 
     async function loadSavedRestaurants() {
@@ -747,7 +689,7 @@
       setSavedStatus("저장된 식당을 불러오는 중...");
       const { data, error } = await sb
         .from(SAVED_TABLE)
-        .select("restaurant_name, menu_name, menu_emoji, category, cuisine, address, lat, lon, created_at")
+        .select("id, restaurant_name, menu_name, menu_emoji, category, cuisine, address, lat, lon, likes, created_at")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) {
