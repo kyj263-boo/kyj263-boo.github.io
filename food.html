@@ -725,6 +725,15 @@
     // 현재 표시 중인 추천 맛집 목록
     let savedRows = [];
 
+    // created_at(ISO 문자열) -> "2026.11.06 15:30" 형식. 값이 없거나 이상하면 "" 반환.
+    function formatSavedDate(value) {
+      if (!value) return "";
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return "";
+      const p = n => String(n).padStart(2, "0");
+      return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
     function setSavedStatus(msg, isError) {
       const el = document.getElementById("savedStatus");
       el.textContent = msg || "";
@@ -746,6 +755,8 @@
         const metaParts = [];
         if (r.menu_name) metaParts.push(`추천 메뉴: ${r.menu_name}`);
         if (r.address) metaParts.push(r.address);
+        const when = formatSavedDate(r.created_at);
+        if (when) metaParts.push(when);
         const meta = metaParts.join(" · ") || "상세 정보 없음";
 
         const li = document.createElement("li");
