@@ -72,13 +72,15 @@ export default async function handler(req) {
     }
 
     // 카카오 키워드 장소 검색: 중심 좌표(x=lon, y=lat) 기준 거리순, 반경 5km
+    // category_group_code=FD6(음식점)로 제한해 카페/편의점 등 비음식점을 걸러낸다.
     const params = new URLSearchParams({
       query: keyword,
       x: String(centerLon),
       y: String(centerLat),
       radius: "5000",
       sort: "distance",
-      size: "15"
+      size: "15",
+      category_group_code: "FD6"
     });
     const url = "https://dapi.kakao.com/v2/local/search/keyword.json?" + params.toString();
     const res = await fetchWithTimeout(url, {
@@ -91,14 +93,34 @@ export default async function handler(req) {
     const data = await res.json();
     const docs = Array.isArray(data.documents) ? data.documents : [];
 
-    const results = docs.map(d => ({
-      name: d.place_name || "",
-      address: d.road_address_name || d.address_name || "",
-      cuisine: (d.category_name || "").split(">").pop().trim(),
-      lat: parseFloat(d.y),
-      lon: parseFloat(d.x),
-      dist: d.distance ? Number(d.distance) : null
-    })).filter(r => r.name).slice(0, 10);
+    // 검색 키워드 자체가 디저트류면(빙수/아이스크림/카페 등) 디저트 가게를 걸러내지 않는다.
+    const dessertWords = ["빙수", "아이스크림", "카페", "디저트", "케이크", "커피", "베이커리", "빵", "제과"];
+    const keywordIsDessert = dessertWords.some(w => keyword.includes(w));
+
+    // 디저트/카페류로만 분류된 가게를 가리키는 카테고리 키워드
+    const dessertCategoryWords = ["빙수", "아이스크림", "카페", "디저트", "제과", "제빵", "베이커리", "커피"];
+
+    const results = docs.map(d => {
+      const category = d.category_name || "";   // 예: "음식점 > 간식 > 빙수"
+      const cuisine = category.split(">").pop().trim();
+      return {
+        name: d.place_name || "",
+        address: d.road_address_name || d.address_name || "",
+        cuisine,
+        category,
+        lat: parseFloat(d.y),
+        lon: parseFloat(d.x),
+        dist: d.distance ? Number(d.distance) : null
+      };
+    }).filter(r => {
+      if (!r.name) return false;
+      // 디저트 메뉴를 찾는 게 아닌데 카테고리가 디저트/카페류면 제외 (예: 떡볶이 검색에 '설빙')
+      if (!keywordIsDessert && dessertCategoryWords.some(w => r.category.includes(w))) {
+        return false;
+      }
+      return true;
+    }).map(({ category, ...rest }) => rest)   // category는 내부 판단용이라 응답에서 제거
+      .slice(0, 10);
 
     return json(200, { ok: true, results });
   } catch (e) {
