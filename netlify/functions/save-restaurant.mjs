@@ -55,6 +55,7 @@ export default async function handler(req) {
   const address = str(payload.address, 120);
   const priceRange = str(payload.price_range, 20);
   const features = str(payload.features, 100);
+  const occasion = str(payload.occasion, 20);
 
   // 필수값 검사 (빈 값 거부)
   if (!name) return json(400, { ok: false, error: "식당 이름을 입력해주세요." });
@@ -74,6 +75,9 @@ export default async function handler(req) {
   ]);
   const priceSafe = ALLOWED_PRICES.has(priceRange) ? priceRange : null;
 
+  // 상황은 자유 입력 허용(콤보 박스). 길이만 제한하고 트림 (위의 str()에서 20자 제한 적용됨).
+  const occasionSafe = occasion || null;
+
   // 저장할 레코드 (허용된 컬럼만; 클라이언트가 보낸 값은 신뢰하지 않고 선별·정규화)
   const record = {
     restaurant_name: name,
@@ -84,6 +88,7 @@ export default async function handler(req) {
     address: address || null,
     price_range: priceSafe,
     features: features || null,
+    occasion: occasionSafe,
     lat: coord(payload.lat, -90, 90),
     lon: coord(payload.lon, -180, 180)
   };
