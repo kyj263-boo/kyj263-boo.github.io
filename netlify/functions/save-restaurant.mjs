@@ -53,6 +53,8 @@ export default async function handler(req) {
   const category = str(payload.category, 20);
   const cuisine = str(payload.cuisine, 40);
   const address = str(payload.address, 120);
+  const priceRange = str(payload.price_range, 20);
+  const features = str(payload.features, 100);
 
   // 필수값 검사 (빈 값 거부)
   if (!name) return json(400, { ok: false, error: "식당 이름을 입력해주세요." });
@@ -65,6 +67,13 @@ export default async function handler(req) {
     return json(400, { ok: false, error: "주소가 너무 깁니다." });
   }
 
+  // 가격대는 허용된 값만 저장 (임의 문자열 거부). 목록에 없으면 null.
+  const ALLOWED_PRICES = new Set([
+    "1만원 이하", "1~2만원", "2~3만원", "3~4만원", "4~5만원",
+    "5~6만원", "6~7만원", "7~8만원", "8~9만원", "9~10만원", "10만원 이상"
+  ]);
+  const priceSafe = ALLOWED_PRICES.has(priceRange) ? priceRange : null;
+
   // 저장할 레코드 (허용된 컬럼만; 클라이언트가 보낸 값은 신뢰하지 않고 선별·정규화)
   const record = {
     restaurant_name: name,
@@ -73,6 +82,8 @@ export default async function handler(req) {
     category: category || null,
     cuisine: cuisine || null,
     address: address || null,
+    price_range: priceSafe,
+    features: features || null,
     lat: coord(payload.lat, -90, 90),
     lon: coord(payload.lon, -180, 180)
   };

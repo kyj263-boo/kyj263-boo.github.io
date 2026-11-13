@@ -24,8 +24,18 @@
         radial-gradient(circle at 95% 35%, #f5e8ce 0, transparent 23rem),
         var(--paper);
     }
-    .wrap { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 60px; }
+    .wrap { width: min(1200px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 60px; }
     header { text-align: center; margin-bottom: 28px; }
+    /* 2단 레이아웃: 왼쪽 음식 추천 / 오른쪽 맛집 게시판 */
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+    .layout > .col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    .layout .panel { margin-top: 0; }
+    /* 오른쪽 맛집 게시판은 길어질 수 있어 화면에 고정하고 내부 스크롤 */
+    .col-board { position: sticky; top: 20px; }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      .col-board { position: static; }
+    }
     .eyebrow { display: inline-block; padding: 7px 13px; border-radius: 99px; background: #fff0e5; color: var(--orange-dark); font-size: 12px; font-weight: 800; letter-spacing: .08em; }
     h1 { font-size: clamp(34px, 7vw, 58px); line-height: 1.12; margin: 16px 0 10px; letter-spacing: -.06em; }
     h1 span { color: var(--orange); }
@@ -118,7 +128,7 @@
     .saved-add-btn:disabled { opacity: .55; cursor: default; }
     .saved-status { font-size: 13px; color: var(--muted); margin: 0 0 12px; min-height: 1px; }
     .saved-status.error { color: #c0453a; }
-    .saved-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .saved-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-height: 60vh; overflow-y: auto; }
     .saved-item { display: flex; align-items: center; gap: 15px; background: #fbf7f0; border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; animation: rise .25s ease both; }
     .saved-item .saved-emoji { width: 56px; height: 56px; flex: none; display: grid; place-items: center; background: #fff0e5; border-radius: 14px; font-size: 32px; }
     .saved-item .saved-body { flex: 1; min-width: 0; }
@@ -150,6 +160,8 @@
       <p>고민은 내가 할게요. 맛있는 한 끼만 즐겨요!</p>
     </header>
 
+    <div class="layout">
+    <div class="col col-recommend">
     <section class="panel" aria-label="음식 추천 조건">
       <h2 class="section-title">1. 어떤 음식이 끌리나요?</h2>
       <div class="categories" id="categories">
@@ -233,22 +245,6 @@
 
     </section>
 
-    <section class="panel saved-restaurants-panel" id="savedPanel" aria-label="추천 맛집">
-      <div class="saved-restaurants" style="margin-top:0; padding-top:0; border-top:0;">
-        <h3 class="saved-title">⭐ 추천 맛집</h3>
-        <p class="saved-desc">모두가 함께 보는 공유 목록이에요. <strong>위치 · 식당 이름 · 추천 메뉴</strong>를 입력해 등록할 수 있어요.</p>
-        <div class="saved-form">
-          <input type="text" id="manualAddr" class="saved-input" maxlength="120" placeholder="위치 (예: 서울 강남구)" aria-label="위치">
-          <input type="text" id="manualName" class="saved-input" maxlength="80" placeholder="식당 이름" aria-label="식당 이름">
-          <input type="text" id="manualMenu" class="saved-input" maxlength="80" placeholder="추천 메뉴" aria-label="추천 메뉴">
-          <button class="saved-add-btn" id="manualSaveBtn" type="button">➕ 등록</button>
-        </div>
-        <p class="saved-status" id="savedStatus"></p>
-        <p class="saved-empty" id="savedEmpty">아직 등록된 맛집이 없어요.</p>
-        <ul class="saved-list" id="savedList"></ul>
-      </div>
-    </section>
-
     <section class="panel favorites" id="favorites" aria-label="마음에 든 메뉴">
       <div class="favorites-head">
         <h2 class="section-title" style="margin:0;">❤️ 마음에 든 메뉴 <span class="fav-count" id="favCount">0</span></h2>
@@ -257,6 +253,41 @@
       <p class="fav-empty" id="favEmpty">아직 저장한 메뉴가 없어요. 추천 결과에서 '♡ 마음에 들어요'를 눌러보세요!</p>
       <ul class="fav-list" id="favList"></ul>
     </section>
+    </div><!-- /.col-recommend -->
+
+    <div class="col col-board">
+    <section class="panel saved-restaurants-panel" id="savedPanel" aria-label="추천 맛집">
+      <div class="saved-restaurants" style="margin-top:0; padding-top:0; border-top:0;">
+        <h3 class="saved-title">⭐ 추천 맛집</h3>
+        <p class="saved-desc">모두가 함께 보는 공유 목록이에요. <strong>위치 · 식당 이름 · 추천 메뉴</strong>를 입력해 등록할 수 있어요.</p>
+        <div class="saved-form">
+          <input type="text" id="manualAddr" class="saved-input" maxlength="120" placeholder="위치 (예: 서울 강남구)" aria-label="위치">
+          <input type="text" id="manualName" class="saved-input" maxlength="80" placeholder="식당 이름" aria-label="식당 이름">
+          <input type="text" id="manualMenu" class="saved-input" maxlength="80" placeholder="추천 메뉴" aria-label="추천 메뉴">
+          <select id="manualPrice" class="saved-input" aria-label="가격대">
+            <option value="">가격대 (선택)</option>
+            <option value="1만원 이하">1만원 이하</option>
+            <option value="1~2만원">1~2만원</option>
+            <option value="2~3만원">2~3만원</option>
+            <option value="3~4만원">3~4만원</option>
+            <option value="4~5만원">4~5만원</option>
+            <option value="5~6만원">5~6만원</option>
+            <option value="6~7만원">6~7만원</option>
+            <option value="7~8만원">7~8만원</option>
+            <option value="8~9만원">8~9만원</option>
+            <option value="9~10만원">9~10만원</option>
+            <option value="10만원 이상">10만원 이상</option>
+          </select>
+          <input type="text" id="manualFeatures" class="saved-input" maxlength="100" placeholder="특징 (예: 주차 가능, 혼밥 좋음 - 선택)" aria-label="특징">
+          <button class="saved-add-btn" id="manualSaveBtn" type="button">➕ 등록</button>
+        </div>
+        <p class="saved-status" id="savedStatus"></p>
+        <p class="saved-empty" id="savedEmpty">아직 등록된 맛집이 없어요.</p>
+        <ul class="saved-list" id="savedList"></ul>
+      </div>
+    </section>
+    </div><!-- /.col-board -->
+    </div><!-- /.layout -->
 
     <footer>오늘의 한 끼가 작은 행복이 되길 바랍니다 ♡</footer>
   </main>
@@ -282,7 +313,38 @@
       {name:"치킨", category:"패스트푸드", emoji:"🍗", spicy:"상관없음", budget:"여유", people:"공유", price:"약 18,000원 이상", desc:"바삭한 튀김옷과 촉촉한 속살은 언제나 옳아요.", tags:["함께 먹기 좋아요","바삭바삭"]},
       {name:"떡볶이", category:"분식", emoji:"🍢", spicy:"매콤", budget:"저렴", people:"상관없음", price:"약 4,000~8,000원", desc:"쫀득한 떡과 매콤달콤한 양념의 중독적인 조합.", tags:["매콤달콤","간식 겸 식사"]},
       {name:"김밥", category:"분식", emoji:"🍙", spicy:"안 매운", budget:"저렴", people:"혼자", price:"약 3,500~6,000원", desc:"한입에 여러 재료를 즐길 수 있는 간편한 메뉴.", tags:["간편한 한 끼","가성비"]},
-      {name:"쫄면", category:"분식", emoji:"🥢", spicy:"매콤", budget:"저렴", people:"혼자", price:"약 7,000~10,000원", desc:"새콤매콤한 양념과 쫄깃한 면발이 입맛을 깨워요.", tags:["새콤매콤","면 요리"]}
+      {name:"쫄면", category:"분식", emoji:"🥢", spicy:"매콤", budget:"저렴", people:"혼자", price:"약 7,000~10,000원", desc:"새콤매콤한 양념과 쫄깃한 면발이 입맛을 깨워요.", tags:["새콤매콤","면 요리"]},
+
+      {name:"된장찌개", category:"한식", emoji:"🍲", spicy:"안 매운", budget:"저렴", people:"상관없음", price:"약 7,000~9,000원", desc:"구수한 된장 국물에 두부와 채소가 듬뿍.", tags:["따뜻한 국물","집밥 느낌"]},
+      {name:"제육볶음", category:"한식", emoji:"🥘", spicy:"매콤", budget:"저렴", people:"상관없음", price:"약 8,000~11,000원", desc:"매콤하게 볶은 돼지고기에 밥이 술술 넘어가요.", tags:["밥도둑","매콤"]},
+      {name:"냉면", category:"한식", emoji:"🍜", spicy:"안 매운", budget:"보통", people:"상관없음", price:"약 9,000~12,000원", desc:"시원한 육수에 쫄깃한 면, 더울 때 딱.", tags:["시원한 한 끼","면 요리"]},
+      {name:"갈비탕", category:"한식", emoji:"🍲", spicy:"안 매운", budget:"보통", people:"상관없음", price:"약 10,000~14,000원", desc:"진하게 우린 국물에 큼직한 갈비가 푸짐해요.", tags:["보양 한 끼","국물 요리"]},
+      {name:"김치볶음밥", category:"한식", emoji:"🍚", spicy:"매콤", budget:"저렴", people:"혼자", price:"약 7,000~9,000원", desc:"잘 익은 김치로 볶아 감칠맛 가득한 한 그릇.", tags:["간편한 한 끼","밥 메뉴"]},
+      {name:"부대찌개", category:"한식", emoji:"🍲", spicy:"매콤", budget:"보통", people:"공유", price:"약 10,000~14,000원", desc:"햄·소시지·라면사리까지, 든든하게 끓여 먹어요.", tags:["함께 먹기 좋아요","얼큰한 국물"]},
+      {name:"칼국수", category:"한식", emoji:"🍜", spicy:"안 매운", budget:"저렴", people:"상관없음", price:"약 7,000~10,000원", desc:"손맛 가득한 국물에 쫄깃한 면발.", tags:["따뜻한 국물","면 요리"]},
+
+      {name:"마라샹궈", category:"중식", emoji:"🥘", spicy:"아주 매운", budget:"보통", people:"상관없음", price:"약 12,000~20,000원", desc:"얼얼한 마라 향에 볶아낸 재료가 가득.", tags:["얼얼한 매운맛","취향대로"]},
+      {name:"양장피", category:"중식", emoji:"🥡", spicy:"안 매운", budget:"여유", people:"공유", price:"약 20,000원 이상", desc:"해산물과 채소를 새콤한 소스에 무쳐 먹어요.", tags:["함께 먹기 좋아요","해물"]},
+      {name:"볶음밥", category:"중식", emoji:"🍚", spicy:"안 매운", budget:"저렴", people:"혼자", price:"약 7,000~9,000원", desc:"불향 가득한 중화 볶음밥, 계란까지 얹어요.", tags:["간편한 한 끼","밥 메뉴"]},
+      {name:"깐풍기", category:"중식", emoji:"🍗", spicy:"매콤", budget:"여유", people:"공유", price:"약 18,000원 이상", desc:"바삭한 닭고기에 매콤달콤 소스를 입혔어요.", tags:["바삭바삭","함께 먹기 좋아요"]},
+
+      {name:"우동", category:"일식", emoji:"🍜", spicy:"안 매운", budget:"저렴", people:"혼자", price:"약 7,000~10,000원", desc:"담백한 가쓰오 국물에 도톰한 면발.", tags:["따뜻한 국물","면 요리"]},
+      {name:"오야코동", category:"일식", emoji:"🍚", spicy:"안 매운", budget:"보통", people:"혼자", price:"약 9,000~12,000원", desc:"닭고기와 계란을 폭신하게 올린 덮밥.", tags:["간편한 한 끼","밥 메뉴"]},
+      {name:"텐동", category:"일식", emoji:"🍤", spicy:"안 매운", budget:"보통", people:"혼자", price:"약 11,000~15,000원", desc:"바삭한 튀김을 밥 위에 올린 든든한 덮밥.", tags:["바삭바삭","든든한 한 끼"]},
+      {name:"가라아게", category:"일식", emoji:"🍗", spicy:"안 매운", budget:"보통", people:"공유", price:"약 12,000~16,000원", desc:"겉바속촉 일본식 닭튀김, 맥주와도 잘 어울려요.", tags:["바삭바삭","함께 먹기 좋아요"]},
+
+      {name:"리조또", category:"양식", emoji:"🍚", spicy:"안 매운", budget:"보통", people:"상관없음", price:"약 12,000~17,000원", desc:"크리미한 소스에 쌀알이 꾸덕하게 어우러져요.", tags:["분위기 있는 한 끼","부드러운 맛"]},
+      {name:"스테이크", category:"양식", emoji:"🥩", spicy:"안 매운", budget:"여유", people:"상관없음", price:"약 20,000원 이상", desc:"육즙 가득한 고기 한 점, 특별한 날에 딱.", tags:["고기파 추천","외식 메뉴"]},
+      {name:"샐러드", category:"양식", emoji:"🥗", spicy:"안 매운", budget:"보통", people:"혼자", price:"약 9,000~13,000원", desc:"신선한 채소와 드레싱으로 가볍게 즐겨요.", tags:["가벼운 한 끼","채소 듬뿍"]},
+      {name:"오므라이스", category:"양식", emoji:"🍳", spicy:"안 매운", budget:"저렴", people:"혼자", price:"약 8,000~11,000원", desc:"부드러운 계란 아래 볶음밥이 숨어 있어요.", tags:["간편한 한 끼","밥 메뉴"]},
+
+      {name:"핫도그", category:"패스트푸드", emoji:"🌭", spicy:"안 매운", budget:"저렴", people:"혼자", price:"약 3,000~6,000원", desc:"겉은 바삭, 속은 쫄깃한 간편 간식 겸 식사.", tags:["빠르게 먹기","간식 겸 식사"]},
+      {name:"타코", category:"패스트푸드", emoji:"🌮", spicy:"매콤", budget:"보통", people:"상관없음", price:"약 8,000~13,000원", desc:"토르티야에 고기와 채소를 싸 먹는 멕시칸.", tags:["이국적인 맛","간편식"]},
+      {name:"샌드위치", category:"패스트푸드", emoji:"🥪", spicy:"안 매운", budget:"저렴", people:"혼자", price:"약 5,000~9,000원", desc:"신선한 재료를 듬뿍 넣어 든든하게.", tags:["가벼운 한 끼","간편식"]},
+
+      {name:"순대", category:"분식", emoji:"🍢", spicy:"안 매운", budget:"저렴", people:"상관없음", price:"약 5,000~8,000원", desc:"쫄깃한 순대에 소금이나 양념을 콕.", tags:["간식 겸 식사","가성비"]},
+      {name:"라볶이", category:"분식", emoji:"🍜", spicy:"매콤", budget:"저렴", people:"상관없음", price:"약 5,000~8,000원", desc:"떡볶이에 라면사리까지, 매콤달콤 든든.", tags:["매콤달콤","면 요리"]},
+      {name:"튀김", category:"분식", emoji:"🍤", spicy:"안 매운", budget:"저렴", people:"공유", price:"약 4,000~8,000원", desc:"바삭하게 튀겨낸 야채·오징어·새우 모둠.", tags:["바삭바삭","함께 먹기 좋아요"]}
     ];
 
     let selectedCategory = "전체";
@@ -667,7 +729,9 @@
       savedRows.forEach(r => {
         const metaParts = [];
         if (r.menu_name) metaParts.push(`추천 메뉴: ${r.menu_name}`);
+        if (r.price_range) metaParts.push(`가격대: ${r.price_range}`);
         if (r.address) metaParts.push(r.address);
+        if (r.features) metaParts.push(r.features);
         const when = formatSavedDate(r.created_at);
         if (when) metaParts.push(when);
         const meta = metaParts.join(" · ") || "상세 정보 없음";
@@ -711,7 +775,7 @@
           const to = from + PAGE - 1;
           const { data, error } = await sb
             .from(SAVED_TABLE)
-            .select("id, restaurant_name, menu_name, menu_emoji, category, cuisine, address, lat, lon, created_at")
+            .select("id, restaurant_name, menu_name, menu_emoji, category, cuisine, address, price_range, features, lat, lon, created_at")
             .order("created_at", { ascending: false })
             .range(from, to);
           if (error) {
@@ -785,10 +849,14 @@
       const addrEl = document.getElementById("manualAddr");
       const nameEl = document.getElementById("manualName");
       const menuEl = document.getElementById("manualMenu");
+      const priceEl = document.getElementById("manualPrice");
+      const featuresEl = document.getElementById("manualFeatures");
       const btn = document.getElementById("manualSaveBtn");
       const address = addrEl.value.trim();
       const name = nameEl.value.trim();
       const menu = menuEl.value.trim();
+      const priceRange = priceEl.value;
+      const features = featuresEl.value.trim();
 
       if (!name) { setSavedStatus("식당 이름을 입력해주세요.", true); nameEl.focus(); return; }
       if (!menu) { setSavedStatus("추천 메뉴를 입력해주세요.", true); menuEl.focus(); return; }
@@ -805,6 +873,8 @@
         category: null,
         cuisine: null,
         address: address || null,
+        price_range: priceRange || null,
+        features: features || null,
         lat: null,
         lon: null
       });
@@ -819,11 +889,13 @@
       addrEl.value = "";
       nameEl.value = "";
       menuEl.value = "";
+      priceEl.value = "";
+      featuresEl.value = "";
       loadSavedRestaurants();
     }
 
     document.getElementById("manualSaveBtn").addEventListener("click", saveManualRestaurant);
-    ["manualAddr", "manualName", "manualMenu"].forEach(id => {
+    ["manualAddr", "manualName", "manualMenu", "manualFeatures"].forEach(id => {
       document.getElementById(id).addEventListener("keydown", e => {
         if (e.key === "Enter") { e.preventDefault(); saveManualRestaurant(); }
       });
