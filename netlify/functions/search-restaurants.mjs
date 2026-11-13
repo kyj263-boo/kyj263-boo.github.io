@@ -32,10 +32,7 @@ async function geocodeRegion(regionName, key) {
   const res = await fetchWithTimeout(url, {
     headers: { "Authorization": `KakaoAK ${key}` }
   }, 8000);
-  if (!res.ok) {
-    console.error(`[search-restaurants] kakao address status=${res.status}`);
-    return null;
-  }
+  if (!res.ok) return null;
   const data = await res.json();
   if (data.documents && data.documents.length) {
     const d = data.documents[0];
@@ -89,10 +86,6 @@ export default async function handler(req) {
     }, 8000);
 
     if (!res.ok) {
-      // [임시 진단] 카카오 키워드 검색 응답 상태 코드만 로깅 (키·본문 미포함)
-      let detail = "";
-      try { detail = (await res.text()).slice(0, 300); } catch {}
-      console.error(`[search-restaurants] kakao keyword failed: status=${res.status} body=${detail}`);
       return json(502, { ok: false, error: "식당 검색에 실패했어요. 잠시 후 다시 시도해주세요." });
     }
     const data = await res.json();
@@ -109,8 +102,6 @@ export default async function handler(req) {
 
     return json(200, { ok: true, results });
   } catch (e) {
-    // [임시 진단] 예외 종류·메시지만 로깅 (키·요청 본문 미포함)
-    console.error(`[search-restaurants] request error: ${e && e.name ? e.name : "Error"}: ${e && e.message ? e.message : String(e)}`);
     return json(502, { ok: false, error: "식당 검색 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." });
   }
 }
