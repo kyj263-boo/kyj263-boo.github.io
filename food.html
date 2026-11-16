@@ -112,8 +112,8 @@
     .restaurant-item .rest-name { font-weight: 800; font-size: 15px; }
     .restaurant-item .rest-meta { color: var(--muted); font-size: 12px; margin-top: 2px; overflow-wrap: break-word; }
     .restaurant-item .rest-dist { flex: none; font-weight: 900; color: var(--green); font-size: 13px; }
-    .restaurant-item .map-link { flex: none; text-decoration: none; font-size: 18px; padding: 4px; border-radius: 8px; }
-    .restaurant-item .map-link:hover { background: #e4efe4; }
+    .restaurant-item .map-link { flex: none; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-size: 13px; font-weight: 800; color: var(--green); background: #e4efe4; border: 1px solid #cfe3cf; padding: 7px 11px; border-radius: 10px; white-space: nowrap; }
+    .restaurant-item .map-link:hover { background: #d4e8d4; }
     .restaurant-item .save-btn { flex: none; border: 1px solid #d7c8a8; background: #fffaf0; color: #b5791f; border-radius: 10px; padding: 7px 10px; font-size: 13px; font-weight: 800; cursor: pointer; }
     .restaurant-item .save-btn:hover:not(:disabled) { background: #fff2d8; }
     .restaurant-item .save-btn:disabled { opacity: .55; cursor: default; }
@@ -706,7 +706,7 @@
               <div class="rest-meta">${escapeHtml(meta)}</div>
             </div>
             <div class="rest-dist">${distText}</div>
-            <a class="map-link" href="${mapUrl}" target="_blank" rel="noopener" title="카카오맵에서 보기">🗺️</a>
+            <a class="map-link" href="${mapUrl}" target="_blank" rel="noopener" title="카카오맵에서 위치 보기">🗺️ 지도보기</a>
             <button class="save-btn" data-index="${i}" title="이 식당을 공유 목록에 저장">⭐ 저장</button>
           </li>`;
       }).join("");
