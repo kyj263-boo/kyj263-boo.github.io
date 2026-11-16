@@ -457,6 +457,68 @@
 
     const peopleLabel = { "혼자": "혼밥 추천", "소규모": "2~3명에 딱", "단체": "여럿이 함께" };
 
+    // 주어진 조건으로 후보가 몇 개인지 센다 (showNoMatch에서 '어떤 조건을 풀면 되는지' 계산용)
+    function countCandidates(category, foodType, budget, people) {
+      return foods.filter(food => {
+        const categoryMatch = category === "전체" || food.category === category;
+        const typeMatch = foodType === "상관없음" || food.type === foodType;
+        const budgetMatch = budget === "상관없음" || food.budget === budget;
+        const peopleMatch = people === "상관없음" || !(people === "혼자" && food.people === "공유");
+        return categoryMatch && typeMatch && budgetMatch && peopleMatch;
+      }).length;
+    }
+
+    // 조건에 맞는 메뉴가 없을 때: alert 대신 결과 영역에 안내를 표시한다.
+    // 어떤 조건을 완화하면 결과가 생기는지 찾아서 구체적으로 알려준다.
+    function showNoMatch(category, foodType, budget, people) {
+      const labels = {
+        category: { key: "카테고리", value: category },
+        foodType: { key: "음식 종류", value: foodType },
+        budget:   { key: "예산",     value: budget },
+        people:   { key: "인원",     value: people }
+      };
+      // 현재 '상관없음/전체'가 아닌(=실제로 거르고 있는) 조건들
+      const activeConds = [];
+      if (category !== "전체")   activeConds.push("category");
+      if (foodType !== "상관없음") activeConds.push("foodType");
+      if (budget !== "상관없음")  activeConds.push("budget");
+      if (people !== "상관없음")  activeConds.push("people");
+
+      // 조건을 하나씩 풀었을 때 후보가 생기는 것들을 모은다
+      const relaxable = [];
+      activeConds.forEach(cond => {
+        const c = cond === "category" ? "전체" : category;
+        const f = cond === "foodType" ? "상관없음" : foodType;
+        const b = cond === "budget"   ? "상관없음" : budget;
+        const p = cond === "people"   ? "상관없음" : people;
+        if (countCandidates(c, f, b, p) > 0) relaxable.push(labels[cond].key);
+      });
+
+      lastPick = null;
+      document.getElementById("emoji").textContent = "🤔";
+      document.getElementById("foodName").textContent = "조건에 맞는 메뉴가 없어요";
+      let msg = "선택하신 조건을 모두 만족하는 메뉴를 찾지 못했어요.";
+      if (relaxable.length) {
+        msg += ` ${relaxable.join(" 또는 ")} 조건을 '상관없어요'로 바꾸면 추천을 받을 수 있어요.`;
+      } else {
+        msg += " 조건을 조금 더 느슨하게 바꿔 다시 시도해 주세요.";
+      }
+      document.getElementById("description").textContent = msg;
+      document.getElementById("tags").innerHTML = "";
+
+      const result = document.getElementById("result");
+      result.classList.remove("show");
+      void result.offsetWidth;
+      result.classList.add("show");
+      updateFavoriteButton();
+      // 빈 결과에서는 식당 찾기 영역을 비워 혼동을 막는다
+      document.getElementById("finderFood").textContent = "이 메뉴";
+      document.getElementById("restaurantList").innerHTML = "";
+      document.getElementById("finderStatus").textContent = "";
+      document.getElementById("finderStatus").classList.remove("error");
+      result.scrollIntoView({behavior:"smooth", block:"nearest"});
+    }
+
     function recommendFood() {
       const foodType = document.getElementById("foodType").value;
       const budget = document.getElementById("budget").value;
@@ -471,7 +533,7 @@
       });
 
       if (candidates.length === 0) {
-        alert("선택한 조건에 맞는 메뉴가 없어요. 조건을 조금 바꿔주세요!");
+        showNoMatch(selectedCategory, foodType, budget, people);
         return;
       }
 
