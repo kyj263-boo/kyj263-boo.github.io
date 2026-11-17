@@ -150,8 +150,9 @@
     .saved-item .saved-body { flex: 1; min-width: 0; }
     .saved-item .saved-name { font-weight: 800; font-size: 21px; letter-spacing: -.02em; }
     .saved-item .saved-meta { color: #6b6258; font-size: 15px; margin-top: 4px; overflow-wrap: break-word; line-height: 1.5; }
-    .saved-item .saved-map { flex: none; text-decoration: none; font-size: 18px; padding: 4px; border-radius: 8px; }
-    .saved-item .saved-map:hover { background: #f0e7dc; }
+    .saved-item .saved-map { flex: none; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-size: 13px; font-weight: 800; color: var(--green); background: #e4efe4; border: 1px solid #cfe3cf; padding: 8px 12px; border-radius: 10px; white-space: nowrap; }
+    .saved-item .saved-map:hover { background: #d4e8d4; }
+    @media (max-width: 600px) { .saved-item { flex-wrap: wrap; } .saved-item .saved-map { margin-left: auto; } }
     .saved-empty { color: #a69b8e; font-size: 15px; margin: 0; line-height: 1.6; }
     footer { text-align: center; color: #a69b8e; font-size: 12px; padding-top: 25px; }
     @media (max-width: 600px) {
@@ -875,8 +876,41 @@
 
         li.appendChild(emoji);
         li.appendChild(body);
+
+        // 지도 링크: 좌표가 있으면 좌표로, 없으면 주소+이름(또는 이름)으로 카카오맵을 연다.
+        const mapUrl = buildSavedMapUrl(r);
+        if (mapUrl) {
+          const mapLink = document.createElement("a");
+          mapLink.className = "saved-map";
+          mapLink.href = mapUrl;
+          mapLink.target = "_blank";
+          mapLink.rel = "noopener";
+          mapLink.title = "카카오맵에서 위치 보기";
+          mapLink.textContent = "🗺️ 지도보기";
+          li.appendChild(mapLink);
+        }
+
         ul.appendChild(li);
       });
+    }
+
+    // 게시판 맛집의 카카오맵 URL 생성
+    // 1) lat/lon 이 유효하면 좌표로 지도 표시 (가장 정확)
+    // 2) 없으면 '주소 + 식당 이름' 으로 검색
+    // 3) 그것도 없으면 '식당 이름' 으로 검색
+    function buildSavedMapUrl(r) {
+      const name = (r.restaurant_name || "").trim();
+      const hasCoord = typeof r.lat === "number" && typeof r.lon === "number"
+        && isFinite(r.lat) && isFinite(r.lon);
+      if (hasCoord) {
+        return `https://map.kakao.com/link/map/${encodeURIComponent(name || "식당")},${r.lat},${r.lon}`;
+      }
+      const addr = (r.address || "").trim();
+      const query = [addr, name].filter(Boolean).join(" ");
+      if (query) {
+        return `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
+      }
+      return null;
     }
 
     async function loadSavedRestaurants() {
