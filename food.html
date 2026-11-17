@@ -121,11 +121,20 @@
     .saved-restaurants-panel { margin-top: 22px; }
     .saved-title { font-size: 16px; font-weight: 800; margin: 0 0 6px; }
     .saved-desc { color: var(--muted); font-size: 13px; margin: 0 0 12px; line-height: 1.6; }
-    .saved-form { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 12px; }
-    .saved-input { flex: 1; min-width: 140px; border: 1px solid #e9dfd3; background: white; padding: 11px 12px; border-radius: 11px; color: var(--ink); font: inherit; font-size: 14px; outline-color: #f2a17b; }
-    .saved-add-btn { flex: none; border: 0; border-radius: 11px; padding: 11px 16px; background: var(--orange); color: white; font-weight: 800; font-size: 14px; cursor: pointer; }
+    /* 등록 폼 열기/닫기 토글 버튼 */
+    .saved-toggle { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #f0d8c6; background: #fff6ef; color: var(--orange-dark); border-radius: 12px; padding: 11px 16px; font-weight: 800; font-size: 14px; cursor: pointer; margin-bottom: 14px; }
+    .saved-toggle:hover { background: #ffeede; }
+    .saved-toggle .chev { transition: transform .2s; font-size: 12px; }
+    .saved-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+    /* 입력칸을 2열 그리드로 가지런히 정렬 (좁은 화면에선 1열) */
+    .saved-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; padding: 16px; background: #fdf8f1; border: 1px solid var(--line); border-radius: 16px; }
+    .saved-form.collapsed { display: none; }
+    .saved-form .full { grid-column: 1 / -1; }
+    .saved-input { width: 100%; border: 1px solid #e9dfd3; background: white; padding: 11px 12px; border-radius: 11px; color: var(--ink); font: inherit; font-size: 14px; outline-color: #f2a17b; }
+    .saved-add-btn { grid-column: 1 / -1; border: 0; border-radius: 11px; padding: 12px 16px; background: var(--orange); color: white; font-weight: 800; font-size: 14px; cursor: pointer; }
     .saved-add-btn:hover:not(:disabled) { background: #eb6d38; }
     .saved-add-btn:disabled { opacity: .55; cursor: default; }
+    @media (max-width: 600px) { .saved-form { grid-template-columns: 1fr; } }
     .occasion-filter { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
     .occ-chip { border: 1px solid var(--line); background: #fff; color: #655d53; border-radius: 99px; padding: 7px 12px; font-size: 13px; font-weight: 700; cursor: pointer; transition: .15s; }
     .occ-chip:hover { border-color: #f5b18f; }
@@ -266,11 +275,14 @@
       <div class="saved-restaurants" style="margin-top:0; padding-top:0; border-top:0;">
         <h3 class="saved-title">⭐ 추천 맛집</h3>
         <p class="saved-desc">모두가 함께 보는 공유 목록이에요. <strong>위치 · 식당 이름 · 추천 메뉴</strong>를 입력해 등록할 수 있어요.</p>
-        <div class="saved-form">
-          <input type="text" id="manualAddr" class="saved-input" maxlength="120" placeholder="위치 (예: 서울 강남구)" aria-label="위치">
+        <button class="saved-toggle" id="savedToggle" type="button" aria-expanded="false" aria-controls="savedForm">
+          <span>➕ 맛집 등록하기</span><span class="chev">▼</span>
+        </button>
+        <div class="saved-form collapsed" id="savedForm">
           <input type="text" id="manualName" class="saved-input" maxlength="80" placeholder="식당 이름" aria-label="식당 이름">
           <input type="text" id="manualMenu" class="saved-input" maxlength="80" placeholder="추천 메뉴" aria-label="추천 메뉴">
-          <input type="text" id="manualOccasion" class="saved-input" list="occasionOptions" maxlength="20" placeholder="상황 (선택·직접 입력 가능)" aria-label="어떤 상황에 좋아요">
+          <input type="text" id="manualAddr" class="saved-input full" maxlength="120" placeholder="위치 (예: 서울 강남구)" aria-label="위치">
+          <input type="text" id="manualOccasion" class="saved-input" list="occasionOptions" maxlength="20" placeholder="상황 (선택)" aria-label="어떤 상황에 좋아요">
           <datalist id="occasionOptions">
             <option value="데이트"></option>
             <option value="생일·기념일"></option>
@@ -293,7 +305,7 @@
             <option value="9~10만원">9~10만원</option>
             <option value="10만원 이상">10만원 이상</option>
           </select>
-          <input type="text" id="manualFeatures" class="saved-input" maxlength="100" placeholder="특징 (예: 주차 가능, 혼밥 좋음 - 선택)" aria-label="특징">
+          <input type="text" id="manualFeatures" class="saved-input full" maxlength="100" placeholder="특징 (예: 주차 가능, 혼밥 좋음 - 선택)" aria-label="특징">
           <button class="saved-add-btn" id="manualSaveBtn" type="button">➕ 등록</button>
         </div>
         <div class="occasion-filter" id="occasionFilter" role="group" aria-label="상황별 필터">
@@ -994,6 +1006,12 @@
       priceEl.value = "";
       featuresEl.value = "";
       occasionEl.value = "";
+      // 등록 후 폼을 다시 접어 목록이 잘 보이게 한다
+      const form = document.getElementById("savedForm");
+      const toggle = document.getElementById("savedToggle");
+      form.classList.add("collapsed");
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.querySelector("span").textContent = "➕ 맛집 등록하기";
       loadSavedRestaurants();
     }
 
@@ -1005,6 +1023,17 @@
       document.querySelectorAll("#occasionFilter .occ-chip").forEach(c =>
         c.classList.toggle("active", c === chip));
       renderSavedRestaurants();
+    });
+
+    // 등록 폼 열기/닫기 토글 (기본은 접힘 → 목록이 먼저 보이고, 쓸 때만 폼을 펼친다)
+    document.getElementById("savedToggle").addEventListener("click", () => {
+      const btn = document.getElementById("savedToggle");
+      const form = document.getElementById("savedForm");
+      const willOpen = form.classList.contains("collapsed");
+      form.classList.toggle("collapsed", !willOpen);
+      btn.setAttribute("aria-expanded", String(willOpen));
+      btn.querySelector("span").textContent = willOpen ? "✕ 닫기" : "➕ 맛집 등록하기";
+      if (willOpen) document.getElementById("manualName").focus();
     });
 
     document.getElementById("manualSaveBtn").addEventListener("click", saveManualRestaurant);
