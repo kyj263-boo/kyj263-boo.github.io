@@ -26,16 +26,19 @@
     }
     .wrap { width: min(1200px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 60px; }
     header { text-align: center; margin-bottom: 28px; }
-    /* 2단 레이아웃: 왼쪽 음식 추천 / 오른쪽 맛집 게시판 */
-    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-    .layout > .col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-    .layout .panel { margin-top: 0; }
-    /* 오른쪽 맛집 게시판은 길어질 수 있어 화면에 고정하고 내부 스크롤 */
-    .col-board { position: sticky; top: 20px; }
-    @media (max-width: 860px) {
-      .layout { grid-template-columns: 1fr; }
-      .col-board { position: static; }
+    /* 상단 탭으로 두 기능을 전환: 한 번에 한쪽만 보여 화면을 단순하게 유지 */
+    .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 22px; }
+    .tab-btn {
+      border: 1px solid var(--line); background: #fff; color: #756b60; border-radius: 99px;
+      padding: 11px 22px; font-size: 15px; font-weight: 800; cursor: pointer; transition: .18s;
     }
+    .tab-btn:hover { border-color: #f5b18f; }
+    .tab-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; box-shadow: 0 6px 16px rgba(240,120,67,.25); }
+    /* 레이아웃: 단일 컬럼. 활성 탭의 열만 보인다 */
+    .layout { display: block; }
+    .layout > .col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    .layout > .col[hidden] { display: none; }
+    .layout .panel { margin-top: 0; }
     .eyebrow { display: inline-block; padding: 7px 13px; border-radius: 99px; background: #fff0e5; color: var(--orange-dark); font-size: 12px; font-weight: 800; letter-spacing: .08em; }
     h1 { font-size: clamp(34px, 7vw, 58px); line-height: 1.12; margin: 16px 0 10px; letter-spacing: -.06em; }
     h1 span { color: var(--orange); }
@@ -173,8 +176,13 @@
       <p>고민은 내가 할게요. 맛있는 한 끼만 즐겨요!</p>
     </header>
 
+    <div class="tabs" role="tablist" aria-label="화면 전환">
+      <button class="tab-btn active" id="tabRecommend" role="tab" aria-selected="true" aria-controls="colRecommend" type="button">🍽️ 메뉴 추천</button>
+      <button class="tab-btn" id="tabBoard" role="tab" aria-selected="false" aria-controls="colBoard" type="button">⭐ 추천 맛집</button>
+    </div>
+
     <div class="layout">
-    <div class="col col-recommend">
+    <div class="col col-recommend" id="colRecommend" role="tabpanel" aria-labelledby="tabRecommend">
     <section class="panel" aria-label="음식 추천 조건">
       <h2 class="section-title">1. 어떤 음식이 끌리나요?</h2>
       <div class="categories" id="categories">
@@ -270,7 +278,7 @@
     </section>
     </div><!-- /.col-recommend -->
 
-    <div class="col col-board">
+    <div class="col col-board" id="colBoard" role="tabpanel" aria-labelledby="tabBoard" hidden>
     <section class="panel saved-restaurants-panel" id="savedPanel" aria-label="추천 맛집">
       <div class="saved-restaurants" style="margin-top:0; padding-top:0; border-top:0;">
         <h3 class="saved-title">⭐ 추천 맛집</h3>
@@ -1042,6 +1050,21 @@
         if (e.key === "Enter") { e.preventDefault(); saveManualRestaurant(); }
       });
     });
+
+    // ===== 상단 탭 전환 (메뉴 추천 / 추천 맛집) =====
+    function switchTab(which) {
+      const isRecommend = which === "recommend";
+      document.getElementById("colRecommend").hidden = !isRecommend;
+      document.getElementById("colBoard").hidden = isRecommend;
+      const tabR = document.getElementById("tabRecommend");
+      const tabB = document.getElementById("tabBoard");
+      tabR.classList.toggle("active", isRecommend);
+      tabB.classList.toggle("active", !isRecommend);
+      tabR.setAttribute("aria-selected", String(isRecommend));
+      tabB.setAttribute("aria-selected", String(!isRecommend));
+    }
+    document.getElementById("tabRecommend").addEventListener("click", () => switchTab("recommend"));
+    document.getElementById("tabBoard").addEventListener("click", () => switchTab("board"));
 
     // 초기 렌더링: 마음에 든 메뉴(localStorage) + 저장된 식당 공유 목록
     renderFavorites();
