@@ -101,7 +101,7 @@ export default async function handler(req, res) {
   };
 
   try {
-    const res = await fetch(`${url}/rest/v1/${TABLE}`, {
+    const apiRes = await fetch(`${url}/rest/v1/${TABLE}`, {
       method: "POST",
       headers: {
         "apikey": key,
@@ -112,16 +112,20 @@ export default async function handler(req, res) {
       body: JSON.stringify(record)
     });
 
-    if (!res.ok) {
+    if (!apiRes.ok) {
       // RLS 거부나 기타 오류. 상세 메시지는 서버 로그로만, 사용자에겐 일반 안내.
+      let detail = "";
+      try { detail = await apiRes.text(); } catch {}
+      console.error("save-restaurant insert failed:", apiRes.status, detail);
       return res.status(502).json({ ok: false, error: "저장에 실패했어요. 잠시 후 다시 시도해주세요." });
     }
     // 저장된 행의 id 를 응답에 포함 (password_hash 는 돌려주지 않음)
     let saved = [];
-    try { saved = await res.json(); } catch {}
+    try { saved = await apiRes.json(); } catch {}
     const newId = (Array.isArray(saved) && saved[0] && saved[0].id != null) ? saved[0].id : null;
     return res.status(200).json({ ok: true, id: newId });
   } catch (e) {
+    console.error("save-restaurant error:", e);
     return res.status(502).json({ ok: false, error: "저장 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." });
   }
 }

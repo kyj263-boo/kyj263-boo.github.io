@@ -80,14 +80,14 @@ export default async function handler(req, res) {
       category_group_code: "FD6"
     });
     const url = "https://dapi.kakao.com/v2/local/search/keyword.json?" + params.toString();
-    const res = await fetchWithTimeout(url, {
+    const kakaoRes = await fetchWithTimeout(url, {
       headers: { "Authorization": `KakaoAK ${key}` }
     }, 8000);
 
-    if (!res.ok) {
+    if (!kakaoRes.ok) {
       return res.status(502).json({ ok: false, error: "식당 검색에 실패했어요. 잠시 후 다시 시도해주세요." });
     }
-    const data = await res.json();
+    const data = await kakaoRes.json();
     const docs = Array.isArray(data.documents) ? data.documents : [];
 
     // 검색 키워드 자체가 디저트류면(빙수/아이스크림/카페 등) 디저트 가게를 걸러내지 않는다.
