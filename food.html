@@ -976,7 +976,9 @@
         if (r.address) metaParts.push(r.address);
         const meta = metaParts.join(" · ") || "상세 정보 없음";
         const distText = (r.dist != null) ? formatDistance(r.dist) : "";
-        const mapUrl = `https://map.kakao.com/link/map/${encodeURIComponent(r.name)},${r.lat},${r.lon}`;
+        // link/search 로 열어 가게 이름(+주소)으로 검색 → 왼쪽에 가게 정보가 뜬다
+        const mapQuery = [r.address, r.name].filter(Boolean).join(" ");
+        const mapUrl = `https://map.kakao.com/link/search/${encodeURIComponent(mapQuery || r.name)}`;
         return `
           <li class="restaurant-item">
             <div class="rank">${i + 1}</div>
@@ -1260,20 +1262,22 @@
     }
 
     // 게시판 맛집의 카카오맵 URL 생성
-    // 1) lat/lon 이 유효하면 좌표로 지도 표시 (가장 정확)
-    // 2) 없으면 '주소 + 식당 이름' 으로 검색
-    // 3) 그것도 없으면 '식당 이름' 으로 검색
+    // 카카오맵은 link/search 로 열어 왼쪽 검색 패널에 가게 정보가 뜨게 한다.
+    // (link/map 은 핀만 찍혀 가게 정보를 볼 수 없음)
+    // 1) '주소 + 식당 이름' 으로 검색 (동명 가게 구분)
+    // 2) 이름만 있으면 '식당 이름' 으로 검색
+    // 3) 이름도 없고 좌표만 있으면 좌표로 지도 표시(폴백)
     function buildSavedMapUrl(r) {
       const name = (r.restaurant_name || "").trim();
-      const hasCoord = typeof r.lat === "number" && typeof r.lon === "number"
-        && isFinite(r.lat) && isFinite(r.lon);
-      if (hasCoord) {
-        return `https://map.kakao.com/link/map/${encodeURIComponent(name || "식당")},${r.lat},${r.lon}`;
-      }
       const addr = (r.address || "").trim();
       const query = [addr, name].filter(Boolean).join(" ");
       if (query) {
         return `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
+      }
+      const hasCoord = typeof r.lat === "number" && typeof r.lon === "number"
+        && isFinite(r.lat) && isFinite(r.lon);
+      if (hasCoord) {
+        return `https://map.kakao.com/link/map/${encodeURIComponent("식당")},${r.lat},${r.lon}`;
       }
       return null;
     }
