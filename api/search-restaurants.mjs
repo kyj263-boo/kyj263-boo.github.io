@@ -11,11 +11,10 @@
 //   2) 좌표 기반(현재 위치): { lat, lon, keyword: "김치찌개" }
 // 응답: { ok: true, results: [{ name, address, cuisine, lat, lon, dist }] }
 
-function json(status, body) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" }
-  });
+function readBody(req) {
+  if (req.body == null) return {};
+  if (typeof req.body === "string") { try { return JSON.parse(req.body); } catch { return null; } }
+  return req.body;
 }
 
 function fetchWithTimeout(url, options, timeout) {
@@ -41,22 +40,20 @@ async function geocodeRegion(regionName, key) {
   return null;
 }
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return json(405, { ok: false, error: "POST만 허용됩니다." });
+    return res.status(405).json({ ok: false, error: "POST만 허용됩니다." });
   }
 
   const key = process.env.KAKAO_REST_KEY;
   if (!key) {
-    return json(500, { ok: false, error: "서버 설정 오류입니다. (환경변수 확인 필요)" });
+    return res.status(500).json({ ok: false, error: "서버 설정 오류입니다. (환경변수 확인 필요)" });
   }
 
-  let payload;
-  try { payload = await req.json(); }
-  catch { return json(400, { ok: false, error: "잘못된 요청입니다." }); }
+  const payload = readBody(req);
 
   const keyword = typeof payload?.keyword === "string" ? payload.keyword.trim().slice(0, 40) : "";
-  if (!keyword) return json(400, { ok: false, error: "검색할 메뉴가 없습니다." });
+  if (!keyword) return res.status(400).json({ ok: false, error: "검색할 메뉴가 없습니다." });
 
   // 중심 좌표 결정: 좌표가 오면 그대로, 아니면 지역명을 지오코딩
   let centerLat = (typeof payload.lat === "number" && Number.isFinite(payload.lat)) ? payload.lat : null;
@@ -65,9 +62,9 @@ export default async function handler(req) {
   try {
     if (centerLat == null || centerLon == null) {
       const region = typeof payload.regionName === "string" ? payload.regionName.trim().slice(0, 60) : "";
-      if (!region) return json(400, { ok: false, error: "위치 정보가 없습니다." });
+      if (!region) return res.status(400).json({ ok: false, error: "위치 정보가 없습니다." });
       const geo = await geocodeRegion(region, key);
-      if (!geo) return json(422, { ok: false, error: "위치를 찾지 못했어요. 다른 지역으로 시도해보세요." });
+      if (!geo) return res.status(422).json({ ok: false, error: "위치를 찾지 못했어요. 다른 지역으로 시도해보세요." });
       centerLat = geo.lat; centerLon = geo.lon;
     }
 
@@ -88,7 +85,7 @@ export default async function handler(req) {
     }, 8000);
 
     if (!res.ok) {
-      return json(502, { ok: false, error: "식당 검색에 실패했어요. 잠시 후 다시 시도해주세요." });
+      return res.status(502).json({ ok: false, error: "식당 검색에 실패했어요. 잠시 후 다시 시도해주세요." });
     }
     const data = await res.json();
     const docs = Array.isArray(data.documents) ? data.documents : [];
@@ -122,8 +119,8 @@ export default async function handler(req) {
     }).map(({ category, ...rest }) => rest)   // category는 내부 판단용이라 응답에서 제거
       .slice(0, 10);
 
-    return json(200, { ok: true, results });
+    return res.status(200).json({ ok: true, results });
   } catch (e) {
-    return json(502, { ok: false, error: "식당 검색 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." });
+    return res.status(502).json({ ok: false, error: "식당 검색 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." });
   }
 }

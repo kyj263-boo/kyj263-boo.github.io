@@ -13,30 +13,29 @@ import { hashPassword, isValidPassword } from "./_password.mjs";
 
 const TABLE = "recommended_restaurants";
 
-function json(status, body) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" }
-  });
+// Vercel Node 형식: req.body 는 자동 파싱(문자열이면 직접 파싱), 응답은 res.status().json()
+function readBody(req) {
+  if (req.body == null) return {};
+  if (typeof req.body === "string") {
+    try { return JSON.parse(req.body); } catch { return null; }
+  }
+  return req.body;
 }
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return json(405, { ok: false, error: "POST만 허용됩니다." });
+    return res.status(405).json({ ok: false, error: "POST만 허용됩니다." });
   }
 
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) {
-    return json(500, { ok: false, error: "서버 설정 오류입니다. (환경변수 확인 필요)" });
+    return res.status(500).json({ ok: false, error: "서버 설정 오류입니다. (환경변수 확인 필요)" });
   }
 
-  let payload;
-  try { payload = await req.json(); }
-  catch { return json(400, { ok: false, error: "잘못된 요청입니다." }); }
-
+  const payload = readBody(req);
   if (typeof payload !== "object" || payload === null) {
-    return json(400, { ok: false, error: "잘못된 요청입니다." });
+    return res.status(400).json({ ok: false, error: "잘못된 요청입니다." });
   }
 
   // 문자열 필드를 안전하게 정리: 문자열이 아니면 "", 트림, 길이 제한
@@ -62,17 +61,17 @@ export default async function handler(req) {
   const password = typeof payload.password === "string" ? payload.password : "";
 
   // 필수값 검사 (빈 값 거부)
-  if (!name) return json(400, { ok: false, error: "식당 이름을 입력해주세요." });
-  if (!menuName) return json(400, { ok: false, error: "추천 메뉴를 입력해주세요." });
+  if (!name) return res.status(400).json({ ok: false, error: "식당 이름을 입력해주세요." });
+  if (!menuName) return res.status(400).json({ ok: false, error: "추천 메뉴를 입력해주세요." });
   if (!isValidPassword(password)) {
-    return json(400, { ok: false, error: "비밀번호를 4자 이상 입력해주세요. (수정·삭제에 필요해요)" });
+    return res.status(400).json({ ok: false, error: "비밀번호를 4자 이상 입력해주세요. (수정·삭제에 필요해요)" });
   }
   // 과도한 길이는 자르기 전 원본이 너무 길면 거부 (악의적 대용량 방지)
   if (typeof payload.restaurant_name === "string" && payload.restaurant_name.length > 200) {
-    return json(400, { ok: false, error: "식당 이름이 너무 깁니다." });
+    return res.status(400).json({ ok: false, error: "식당 이름이 너무 깁니다." });
   }
   if (typeof payload.address === "string" && payload.address.length > 300) {
-    return json(400, { ok: false, error: "주소가 너무 깁니다." });
+    return res.status(400).json({ ok: false, error: "주소가 너무 깁니다." });
   }
 
   // 가격대는 허용된 값만 저장 (임의 문자열 거부). 목록에 없으면 null.
@@ -115,14 +114,14 @@ export default async function handler(req) {
 
     if (!res.ok) {
       // RLS 거부나 기타 오류. 상세 메시지는 서버 로그로만, 사용자에겐 일반 안내.
-      return json(502, { ok: false, error: "저장에 실패했어요. 잠시 후 다시 시도해주세요." });
+      return res.status(502).json({ ok: false, error: "저장에 실패했어요. 잠시 후 다시 시도해주세요." });
     }
     // 저장된 행의 id 를 응답에 포함 (password_hash 는 돌려주지 않음)
     let saved = [];
     try { saved = await res.json(); } catch {}
     const newId = (Array.isArray(saved) && saved[0] && saved[0].id != null) ? saved[0].id : null;
-    return json(200, { ok: true, id: newId });
+    return res.status(200).json({ ok: true, id: newId });
   } catch (e) {
-    return json(502, { ok: false, error: "저장 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." });
+    return res.status(502).json({ ok: false, error: "저장 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." });
   }
 }
