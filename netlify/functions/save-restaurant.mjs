@@ -9,6 +9,8 @@
 // 호출: POST /.netlify/functions/save-restaurant
 // body(JSON): { restaurant_name, menu_name, menu_emoji, category, cuisine, address, lat, lon }
 
+import { hashPassword, isValidPassword } from "./_password.mjs";
+
 const TABLE = "recommended_restaurants";
 
 function json(status, body) {
@@ -56,10 +58,15 @@ export default async function handler(req) {
   const priceRange = str(payload.price_range, 20);
   const features = str(payload.features, 100);
   const occasion = str(payload.occasion, 20);
+  // 수정/삭제용 비밀번호 (글마다 작성자가 정함). 해시로만 저장한다.
+  const password = typeof payload.password === "string" ? payload.password : "";
 
   // 필수값 검사 (빈 값 거부)
   if (!name) return json(400, { ok: false, error: "식당 이름을 입력해주세요." });
   if (!menuName) return json(400, { ok: false, error: "추천 메뉴를 입력해주세요." });
+  if (!isValidPassword(password)) {
+    return json(400, { ok: false, error: "비밀번호를 4자 이상 입력해주세요. (수정·삭제에 필요해요)" });
+  }
   // 과도한 길이는 자르기 전 원본이 너무 길면 거부 (악의적 대용량 방지)
   if (typeof payload.restaurant_name === "string" && payload.restaurant_name.length > 200) {
     return json(400, { ok: false, error: "식당 이름이 너무 깁니다." });
@@ -90,7 +97,8 @@ export default async function handler(req) {
     features: features || null,
     occasion: occasionSafe,
     lat: coord(payload.lat, -90, 90),
-    lon: coord(payload.lon, -180, 180)
+    lon: coord(payload.lon, -180, 180),
+    password_hash: hashPassword(password)
   };
 
   try {
@@ -100,7 +108,7 @@ export default async function handler(req) {
         "apikey": key,
         "authorization": `Bearer ${key}`,
         "content-type": "application/json",
-        "prefer": "return=minimal"
+        "prefer": "return=representation"
       },
       body: JSON.stringify(record)
     });
@@ -109,7 +117,11 @@ export default async function handler(req) {
       // RLS 거부나 기타 오류. 상세 메시지는 서버 로그로만, 사용자에겐 일반 안내.
       return json(502, { ok: false, error: "저장에 실패했어요. 잠시 후 다시 시도해주세요." });
     }
-    return json(200, { ok: true });
+    // 저장된 행의 id 를 응답에 포함 (password_hash 는 돌려주지 않음)
+    let saved = [];
+    try { saved = await res.json(); } catch {}
+    const newId = (Array.isArray(saved) && saved[0] && saved[0].id != null) ? saved[0].id : null;
+    return json(200, { ok: true, id: newId });
   } catch (e) {
     return json(502, { ok: false, error: "저장 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." });
   }

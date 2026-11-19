@@ -152,7 +152,22 @@
     .saved-item .saved-meta { color: #6b6258; font-size: 15px; margin-top: 4px; overflow-wrap: break-word; line-height: 1.5; }
     .saved-item .saved-map { flex: none; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-size: 13px; font-weight: 800; color: var(--green); background: #e4efe4; border: 1px solid #cfe3cf; padding: 8px 12px; border-radius: 10px; white-space: nowrap; }
     .saved-item .saved-map:hover { background: #d4e8d4; }
-    @media (max-width: 600px) { .saved-item { flex-wrap: wrap; } .saved-item .saved-map { margin-left: auto; } }
+    .saved-item .saved-actions { flex: none; display: flex; gap: 6px; }
+    .saved-item .saved-edit, .saved-item .saved-delete { border: 1px solid var(--line); background: white; border-radius: 10px; padding: 8px 11px; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .saved-item .saved-edit { color: #5d554c; }
+    .saved-item .saved-edit:hover { background: #fff6ef; }
+    .saved-item .saved-delete { color: #c0453a; border-color: #f0d5d1; }
+    .saved-item .saved-delete:hover { background: #fdeee7; }
+    .saved-edit-form { display: grid; gap: 8px; width: 100%; }
+    .saved-edit-form input, .saved-edit-form select { border: 1px solid #e9dfd3; background: white; padding: 10px 11px; border-radius: 10px; color: var(--ink); font: inherit; font-size: 14px; outline-color: #f2a17b; width: 100%; }
+    .saved-edit-form .edit-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .saved-edit-form .edit-row > * { flex: 1; min-width: 120px; }
+    .saved-edit-actions { display: flex; gap: 8px; }
+    .saved-edit-save { border: 0; border-radius: 10px; padding: 9px 14px; background: var(--orange); color: white; font-weight: 800; font-size: 14px; cursor: pointer; }
+    .saved-edit-save:hover:not(:disabled) { background: #eb6d38; }
+    .saved-edit-save:disabled { opacity: .55; cursor: default; }
+    .saved-edit-cancel { border: 1px solid var(--line); background: white; color: #756b60; border-radius: 10px; padding: 9px 14px; font-weight: 800; font-size: 14px; cursor: pointer; }
+    @media (max-width: 600px) { .saved-item { flex-wrap: wrap; } .saved-item .saved-map, .saved-item .saved-actions { margin-left: auto; } }
     .saved-empty { color: #a69b8e; font-size: 15px; margin: 0; line-height: 1.6; }
     footer { text-align: center; color: #a69b8e; font-size: 12px; padding-top: 25px; }
     @media (max-width: 600px) {
@@ -324,6 +339,7 @@
             <option value="10만원 이상">10만원 이상</option>
           </select>
           <input type="text" id="manualFeatures" class="saved-input full" maxlength="100" placeholder="특징 (예: 주차 가능, 혼밥 좋음 - 선택)" aria-label="특징">
+          <input type="password" id="manualPassword" class="saved-input full" maxlength="64" placeholder="비밀번호 (수정·삭제에 필요, 4자 이상)" aria-label="비밀번호" autocomplete="new-password">
           <button class="saved-add-btn" id="manualSaveBtn" type="button">➕ 등록</button>
         </div>
         <div class="occasion-filter" id="occasionFilter" role="group" aria-label="상황별 필터">
@@ -993,8 +1009,115 @@
           li.appendChild(mapLink);
         }
 
+        // 수정/삭제 버튼 (누르면 비밀번호를 물어본다. 비번은 등록할 때 정한 값)
+        const actions = document.createElement("div");
+        actions.className = "saved-actions";
+        const editBtn = document.createElement("button");
+        editBtn.className = "saved-edit"; editBtn.type = "button";
+        editBtn.textContent = "✏️ 수정";
+        editBtn.addEventListener("click", () => showBoardEditForm(li, r));
+        const delBtn = document.createElement("button");
+        delBtn.className = "saved-delete"; delBtn.type = "button";
+        delBtn.textContent = "🗑️ 삭제";
+        delBtn.addEventListener("click", () => deleteBoardRestaurant(r.id, r.restaurant_name));
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+        li.appendChild(actions);
+
         ul.appendChild(li);
       });
+    }
+
+    // 게시판 수정 폼으로 전환: 항목(li)을 입력 폼으로 바꾸고, 저장 시 비밀번호를 받아 서버로 보낸다.
+    const BOARD_PRICE_OPTIONS = [
+      "1만원 이하", "1~2만원", "2~3만원", "3~4만원", "4~5만원",
+      "5~6만원", "6~7만원", "7~8만원", "8~9만원", "9~10만원", "10만원 이상"
+    ];
+    function showBoardEditForm(li, r) {
+      li.textContent = "";
+      li.className = "saved-item";
+
+      const form = document.createElement("div");
+      form.className = "saved-edit-form";
+
+      const nameInput = document.createElement("input");
+      nameInput.type = "text"; nameInput.maxLength = 80;
+      nameInput.placeholder = "식당 이름"; nameInput.value = r.restaurant_name || "";
+      const menuInput = document.createElement("input");
+      menuInput.type = "text"; menuInput.maxLength = 80;
+      menuInput.placeholder = "추천 메뉴"; menuInput.value = r.menu_name || "";
+      const addrInput = document.createElement("input");
+      addrInput.type = "text"; addrInput.maxLength = 120;
+      addrInput.placeholder = "위치"; addrInput.value = r.address || "";
+      const occInput = document.createElement("input");
+      occInput.type = "text"; occInput.maxLength = 20;
+      occInput.placeholder = "상황 (선택)"; occInput.value = r.occasion || "";
+      const priceSelect = document.createElement("select");
+      const optNone = document.createElement("option");
+      optNone.value = ""; optNone.textContent = "가격대 (선택)";
+      priceSelect.appendChild(optNone);
+      BOARD_PRICE_OPTIONS.forEach(p => {
+        const o = document.createElement("option");
+        o.value = p; o.textContent = p;
+        if (r.price_range === p) o.selected = true;
+        priceSelect.appendChild(o);
+      });
+      const featInput = document.createElement("input");
+      featInput.type = "text"; featInput.maxLength = 100;
+      featInput.placeholder = "특징 (선택)"; featInput.value = r.features || "";
+      const pwInput = document.createElement("input");
+      pwInput.type = "password"; pwInput.maxLength = 64;
+      pwInput.placeholder = "비밀번호 (등록 시 정한 값)"; pwInput.autocomplete = "off";
+
+      const row1 = document.createElement("div"); row1.className = "edit-row";
+      row1.appendChild(nameInput); row1.appendChild(menuInput);
+      const row2 = document.createElement("div"); row2.className = "edit-row";
+      row2.appendChild(addrInput); row2.appendChild(occInput); row2.appendChild(priceSelect);
+
+      const actions = document.createElement("div"); actions.className = "saved-edit-actions";
+      const saveBtn = document.createElement("button");
+      saveBtn.className = "saved-edit-save"; saveBtn.type = "button"; saveBtn.textContent = "저장";
+      const cancelBtn = document.createElement("button");
+      cancelBtn.className = "saved-edit-cancel"; cancelBtn.type = "button"; cancelBtn.textContent = "취소";
+      cancelBtn.addEventListener("click", () => renderSavedRestaurants());
+      saveBtn.addEventListener("click", async () => {
+        const name = nameInput.value.trim();
+        const menu = menuInput.value.trim();
+        const password = pwInput.value;
+        if (!name) { setSavedStatus("식당 이름을 입력해주세요.", true); nameInput.focus(); return; }
+        if (!menu) { setSavedStatus("추천 메뉴를 입력해주세요.", true); menuInput.focus(); return; }
+        if (!password) { setSavedStatus("비밀번호를 입력해주세요.", true); pwInput.focus(); return; }
+        saveBtn.disabled = true; cancelBtn.disabled = true;
+        saveBtn.textContent = "저장 중...";
+        setSavedStatus("수정하는 중...");
+        const result = await postUpdateRestaurant({
+          id: r.id,
+          password: password,
+          restaurant_name: name,
+          menu_name: menu,
+          address: addrInput.value.trim(),
+          price_range: priceSelect.value,
+          features: featInput.value.trim(),
+          occasion: occInput.value.trim()
+        });
+        if (!result.ok) {
+          setSavedStatus(result.error || "수정하지 못했어요. 잠시 후 다시 시도해주세요.", true);
+          saveBtn.disabled = false; cancelBtn.disabled = false;
+          saveBtn.textContent = "저장";
+          return;
+        }
+        setSavedStatus("수정했어요.");
+        loadSavedRestaurants();
+      });
+      actions.appendChild(saveBtn); actions.appendChild(cancelBtn);
+
+      form.appendChild(row1);
+      form.appendChild(row2);
+      form.appendChild(featInput);
+      form.appendChild(pwInput);
+      form.appendChild(actions);
+      li.appendChild(form);
+      nameInput.focus();
     }
 
     // 게시판 맛집의 카카오맵 URL 생성
@@ -1061,10 +1184,58 @@
         let body = {};
         try { body = await res.json(); } catch {}
         if (!res.ok || !body.ok) return { ok: false, error: body.error };
-        return { ok: true };
+        return { ok: true, id: body.id };
       } catch (e) {
         return { ok: false, error: "저장 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." };
       }
+    }
+
+    // 게시판 삭제 요청 (서버가 비밀번호를 확인)
+    async function postDeleteRestaurant(id, password) {
+      try {
+        const res = await fetch("/.netlify/functions/delete-restaurant", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id, password })
+        });
+        let body = {};
+        try { body = await res.json(); } catch {}
+        if (!res.ok || !body.ok) return { ok: false, error: body.error };
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, error: "삭제 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." };
+      }
+    }
+
+    // 게시판 수정 요청 (서버가 비밀번호를 확인)
+    async function postUpdateRestaurant(fields) {
+      try {
+        const res = await fetch("/.netlify/functions/update-restaurant", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(fields)
+        });
+        let body = {};
+        try { body = await res.json(); } catch {}
+        if (!res.ok || !body.ok) return { ok: false, error: body.error };
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, error: "수정 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." };
+      }
+    }
+
+    // 게시판 글 삭제: 비밀번호를 입력받아 서버로 확인 요청
+    async function deleteBoardRestaurant(id, name) {
+      const password = prompt(`'${name || "이 맛집"}'을(를) 삭제하려면 등록할 때 정한 비밀번호를 입력하세요.`);
+      if (password == null || password === "") return;
+      setSavedStatus("삭제하는 중...");
+      const result = await postDeleteRestaurant(id, password);
+      if (!result.ok) {
+        setSavedStatus(result.error || "삭제하지 못했어요. 잠시 후 다시 시도해주세요.", true);
+        return;
+      }
+      setSavedStatus("삭제했어요.");
+      loadSavedRestaurants();
     }
 
     // 식당 찾기 결과의 '⭐ 저장' → 공유 게시판이 아니라 '나만 보는' 개인 저장(localStorage)으로 보관한다.
@@ -1103,6 +1274,7 @@
       const priceEl = document.getElementById("manualPrice");
       const featuresEl = document.getElementById("manualFeatures");
       const occasionEl = document.getElementById("manualOccasion");
+      const passwordEl = document.getElementById("manualPassword");
       const btn = document.getElementById("manualSaveBtn");
       const address = addrEl.value.trim();
       const name = nameEl.value.trim();
@@ -1110,9 +1282,11 @@
       const priceRange = priceEl.value;
       const features = featuresEl.value.trim();
       const occasion = occasionEl.value;
+      const password = passwordEl.value;
 
       if (!name) { setSavedStatus("식당 이름을 입력해주세요.", true); nameEl.focus(); return; }
       if (!menu) { setSavedStatus("추천 메뉴를 입력해주세요.", true); menuEl.focus(); return; }
+      if (!password || password.length < 4) { setSavedStatus("비밀번호를 4자 이상 입력해주세요. (수정·삭제에 필요해요)", true); passwordEl.focus(); return; }
 
       btn.disabled = true;
       const originalText = btn.textContent;
@@ -1130,7 +1304,8 @@
         features: features || null,
         occasion: occasion || null,
         lat: null,
-        lon: null
+        lon: null,
+        password: password
       });
 
       btn.disabled = false;
@@ -1146,6 +1321,7 @@
       priceEl.value = "";
       featuresEl.value = "";
       occasionEl.value = "";
+      passwordEl.value = "";
       // 등록 후 폼을 다시 접어 목록이 잘 보이게 한다
       const form = document.getElementById("savedForm");
       const toggle = document.getElementById("savedToggle");
