@@ -48,13 +48,14 @@ export default async function handler(req, res) {
   const payload = readBody(req);
 
   if (typeof payload !== "object" || payload === null) {
-    return res.status(400).json({ ok: false, error: "잘못된 요청입니다.", debug: `bodyType=${typeof req.body}` });
+    return res.status(400).json({ ok: false, error: "잘못된 요청입니다." });
   }
 
-  const idNum = Number(payload.id);
+  // id 는 UUID 문자열. 안전한 문자(영숫자/하이픈)만 허용.
+  const idStr = typeof payload.id === "string" ? payload.id.trim() : String(payload.id ?? "");
   const password = typeof payload.password === "string" ? payload.password : "";
-  if (!Number.isInteger(idNum) || idNum <= 0) {
-    return res.status(400).json({ ok: false, error: "잘못된 요청입니다.", debug: `id=${JSON.stringify(payload.id)} bodyType=${typeof req.body} keys=${Object.keys(payload).join(",")}` });
+  if (!idStr || !/^[0-9a-zA-Z-]{1,64}$/.test(idStr)) {
+    return res.status(400).json({ ok: false, error: "잘못된 요청입니다." });
   }
   if (!password) {
     return res.status(400).json({ ok: false, error: "비밀번호를 입력해주세요." });
@@ -68,7 +69,7 @@ export default async function handler(req, res) {
   try {
     // 1) 해당 글의 password_hash 조회
     const getRes = await fetch(
-      `${url}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(idNum)}&select=id,password_hash`,
+      `${url}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(idStr)}&select=id,password_hash`,
       { headers }
     );
     if (!getRes.ok) {
@@ -89,7 +90,7 @@ export default async function handler(req, res) {
 
     // 2) 비번 확인됨 → 삭제
     const delRes = await fetch(
-      `${url}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(idNum)}`,
+      `${url}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(idStr)}`,
       { method: "DELETE", headers }
     );
     if (!delRes.ok) {

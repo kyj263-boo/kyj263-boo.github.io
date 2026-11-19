@@ -128,7 +128,7 @@ export default async function handler(req, res) {
       try { detail = await apiRes.text(); } catch {}
       console.error("save-restaurant insert failed:", apiRes.status, detail);
       // 디버깅용: 실제 Supabase 응답 상태/메시지를 임시로 노출 (원인 파악 후 제거 예정)
-      return res.status(502).json({ ok: false, error: "저장에 실패했어요.", debug: `status=${apiRes.status} ${detail}`.slice(0, 300) });
+      return res.status(502).json({ ok: false, error: "저장에 실패했어요. 잠시 후 다시 시도해주세요." });
     }
     let saved = [];
     try { saved = await apiRes.json(); } catch {}
@@ -137,6 +137,6 @@ export default async function handler(req, res) {
   } catch (e) {
     console.error("save-restaurant error:", e);
     // 디버깅용: 예외 메시지를 임시로 노출 (원인 파악 후 제거 예정)
-    return res.status(502).json({ ok: false, error: "저장 서버에 연결하지 못했어요.", debug: String(e && e.message || e).slice(0, 300) });
+    return res.status(502).json({ ok: false, error: "저장 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." });
   }
 }
