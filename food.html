@@ -339,7 +339,7 @@
             <option value="10만원 이상">10만원 이상</option>
           </select>
           <input type="text" id="manualFeatures" class="saved-input full" maxlength="100" placeholder="특징 (예: 주차 가능, 혼밥 좋음 - 선택)" aria-label="특징">
-          <input type="password" id="manualPassword" class="saved-input full" maxlength="64" placeholder="비밀번호 (수정·삭제에 필요, 4자 이상)" aria-label="비밀번호" autocomplete="new-password">
+          <input type="password" id="manualPassword" class="saved-input full" maxlength="64" placeholder="비밀번호 (선택 · 입력 시 수정·삭제에 필요)" aria-label="비밀번호" autocomplete="new-password">
           <button class="saved-add-btn" id="manualSaveBtn" type="button">➕ 등록</button>
         </div>
         <div class="occasion-filter" id="occasionFilter" role="group" aria-label="상황별 필터">
@@ -1067,7 +1067,7 @@
       featInput.placeholder = "특징 (선택)"; featInput.value = r.features || "";
       const pwInput = document.createElement("input");
       pwInput.type = "password"; pwInput.maxLength = 64;
-      pwInput.placeholder = "비밀번호 (등록 시 정한 값)"; pwInput.autocomplete = "off";
+      pwInput.placeholder = "비밀번호 (있는 글만 입력)"; pwInput.autocomplete = "off";
 
       const row1 = document.createElement("div"); row1.className = "edit-row";
       row1.appendChild(nameInput); row1.appendChild(menuInput);
@@ -1086,7 +1086,7 @@
         const password = pwInput.value;
         if (!name) { setSavedStatus("식당 이름을 입력해주세요.", true); nameInput.focus(); return; }
         if (!menu) { setSavedStatus("추천 메뉴를 입력해주세요.", true); menuInput.focus(); return; }
-        if (!password) { setSavedStatus("비밀번호를 입력해주세요.", true); pwInput.focus(); return; }
+        // 비번은 선택: 비번 있는 글은 서버가 확인하고, 없는 글은 빈 값으로 통과
         saveBtn.disabled = true; cancelBtn.disabled = true;
         saveBtn.textContent = "저장 중...";
         setSavedStatus("수정하는 중...");
@@ -1226,8 +1226,9 @@
 
     // 게시판 글 삭제: 비밀번호를 입력받아 서버로 확인 요청
     async function deleteBoardRestaurant(id, name) {
-      const password = prompt(`'${name || "이 맛집"}'을(를) 삭제하려면 등록할 때 정한 비밀번호를 입력하세요.`);
-      if (password == null || password === "") return;
+      // 비번 없이 등록된 글도 있으므로, 빈 값이어도 진행한다. (취소 시에만 중단)
+      const password = prompt(`'${name || "이 맛집"}'을(를) 삭제할까요? 비밀번호가 있는 글이면 입력하세요. (없으면 빈 칸으로 확인)`);
+      if (password == null) return;
       setSavedStatus("삭제하는 중...");
       const result = await postDeleteRestaurant(id, password);
       if (!result.ok) {
@@ -1286,7 +1287,7 @@
 
       if (!name) { setSavedStatus("식당 이름을 입력해주세요.", true); nameEl.focus(); return; }
       if (!menu) { setSavedStatus("추천 메뉴를 입력해주세요.", true); menuEl.focus(); return; }
-      if (!password || password.length < 4) { setSavedStatus("비밀번호를 4자 이상 입력해주세요. (수정·삭제에 필요해요)", true); passwordEl.focus(); return; }
+      if (password && password.length < 4) { setSavedStatus("비밀번호는 4자 이상이어야 해요. (또는 비워두세요)", true); passwordEl.focus(); return; }
 
       btn.disabled = true;
       const originalText = btn.textContent;

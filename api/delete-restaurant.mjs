@@ -57,9 +57,7 @@ export default async function handler(req, res) {
   if (!idStr || !/^[0-9a-zA-Z-]{1,64}$/.test(idStr)) {
     return res.status(400).json({ ok: false, error: "잘못된 요청입니다." });
   }
-  if (!password) {
-    return res.status(400).json({ ok: false, error: "비밀번호를 입력해주세요." });
-  }
+  // 비밀번호는 선택. 비번 없이 등록된 글은 비번 없이도 삭제 가능.
 
   const headers = {
     "apikey": key,
@@ -81,14 +79,17 @@ export default async function handler(req, res) {
     if (!row) {
       return res.status(404).json({ ok: false, error: "이미 삭제되었거나 없는 글이에요." });
     }
-    if (!row.password_hash) {
-      return res.status(403).json({ ok: false, error: "이 글은 비밀번호가 없어 삭제할 수 없어요." });
-    }
-    if (!verifyPassword(password, row.password_hash)) {
-      return res.status(403).json({ ok: false, error: "비밀번호가 일치하지 않아요." });
+    // 비번이 설정된 글만 비번을 확인한다. 비번 없는 글은 그대로 삭제 허용.
+    if (row.password_hash) {
+      if (!password) {
+        return res.status(403).json({ ok: false, error: "이 글은 비밀번호가 필요해요." });
+      }
+      if (!verifyPassword(password, row.password_hash)) {
+        return res.status(403).json({ ok: false, error: "비밀번호가 일치하지 않아요." });
+      }
     }
 
-    // 2) 비번 확인됨 → 삭제
+    // 2) 삭제
     const delRes = await fetch(
       `${url}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(idStr)}`,
       { method: "DELETE", headers }

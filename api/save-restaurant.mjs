@@ -74,8 +74,9 @@ export default async function handler(req, res) {
   // 필수값 검사 (빈 값 거부)
   if (!name) return res.status(400).json({ ok: false, error: "식당 이름을 입력해주세요." });
   if (!menuName) return res.status(400).json({ ok: false, error: "추천 메뉴를 입력해주세요." });
-  if (!isValidPassword(password)) {
-    return res.status(400).json({ ok: false, error: "비밀번호를 4자 이상 입력해주세요. (수정·삭제에 필요해요)" });
+  // 비밀번호는 선택. 입력했다면 4자 이상이어야 한다. (안 쓰면 비번 없이 등록 → 누구나 수정/삭제 가능)
+  if (password && !isValidPassword(password)) {
+    return res.status(400).json({ ok: false, error: "비밀번호는 4자 이상이어야 해요. (또는 비워두세요)" });
   }
   // 과도한 길이는 자르기 전 원본이 너무 길면 거부 (악의적 대용량 방지)
   if (typeof payload.restaurant_name === "string" && payload.restaurant_name.length > 200) {
@@ -108,7 +109,7 @@ export default async function handler(req, res) {
     occasion: occasionSafe,
     lat: coord(payload.lat, -90, 90),
     lon: coord(payload.lon, -180, 180),
-    password_hash: hashPassword(password)
+    password_hash: password ? hashPassword(password) : null
   };
 
   try {

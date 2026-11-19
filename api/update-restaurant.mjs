@@ -58,9 +58,7 @@ export default async function handler(req, res) {
   if (!idStr || !/^[0-9a-zA-Z-]{1,64}$/.test(idStr)) {
     return res.status(400).json({ ok: false, error: "잘못된 요청입니다." });
   }
-  if (!password) {
-    return res.status(400).json({ ok: false, error: "비밀번호를 입력해주세요." });
-  }
+  // 비밀번호는 선택. 비번 없이 등록된 글은 비번 없이도 수정 가능.
 
   // 문자열 필드 정리 (save-restaurant 와 동일 규칙)
   const str = (v, max) => {
@@ -113,11 +111,14 @@ export default async function handler(req, res) {
     if (!row) {
       return res.status(404).json({ ok: false, error: "없는 글이에요." });
     }
-    if (!row.password_hash) {
-      return res.status(403).json({ ok: false, error: "이 글은 비밀번호가 없어 수정할 수 없어요." });
-    }
-    if (!verifyPassword(password, row.password_hash)) {
-      return res.status(403).json({ ok: false, error: "비밀번호가 일치하지 않아요." });
+    // 비번이 설정된 글만 비번을 확인한다. 비번 없는 글은 그대로 수정 허용.
+    if (row.password_hash) {
+      if (!password) {
+        return res.status(403).json({ ok: false, error: "이 글은 비밀번호가 필요해요." });
+      }
+      if (!verifyPassword(password, row.password_hash)) {
+        return res.status(403).json({ ok: false, error: "비밀번호가 일치하지 않아요." });
+      }
     }
 
     // 2) 비번 확인됨 → 수정
