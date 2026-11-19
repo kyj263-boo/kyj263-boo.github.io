@@ -27,8 +27,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: "POST만 허용됩니다." });
   }
 
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SECRET_KEY;
+  // URL 끝 슬래시/공백 제거 (환경변수에 섞여 들어가면 요청이 깨짐)
+  const url = (process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
+  const key = (process.env.SUPABASE_SECRET_KEY || "").trim();
   if (!url || !key) {
     return res.status(500).json({ ok: false, error: "서버 설정 오류입니다. (환경변수 확인 필요)" });
   }
@@ -113,19 +114,19 @@ export default async function handler(req, res) {
     });
 
     if (!apiRes.ok) {
-      // RLS 거부나 기타 오류. 상세 메시지는 서버 로그로만, 사용자에겐 일반 안내.
       let detail = "";
       try { detail = await apiRes.text(); } catch {}
       console.error("save-restaurant insert failed:", apiRes.status, detail);
-      return res.status(502).json({ ok: false, error: "저장에 실패했어요. 잠시 후 다시 시도해주세요." });
+      // 디버깅용: 실제 Supabase 응답 상태/메시지를 임시로 노출 (원인 파악 후 제거 예정)
+      return res.status(502).json({ ok: false, error: "저장에 실패했어요.", debug: `status=${apiRes.status} ${detail}`.slice(0, 300) });
     }
-    // 저장된 행의 id 를 응답에 포함 (password_hash 는 돌려주지 않음)
     let saved = [];
     try { saved = await apiRes.json(); } catch {}
     const newId = (Array.isArray(saved) && saved[0] && saved[0].id != null) ? saved[0].id : null;
     return res.status(200).json({ ok: true, id: newId });
   } catch (e) {
     console.error("save-restaurant error:", e);
-    return res.status(502).json({ ok: false, error: "저장 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." });
+    // 디버깅용: 예외 메시지를 임시로 노출 (원인 파악 후 제거 예정)
+    return res.status(502).json({ ok: false, error: "저장 서버에 연결하지 못했어요.", debug: String(e && e.message || e).slice(0, 300) });
   }
 }
