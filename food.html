@@ -51,6 +51,31 @@
     .dutch-breakdown-item.payer { background: #fff0e7; border-color: #f4a47e; }
     .dutch-breakdown-item.payer .dbi-amount { color: var(--orange-dark); }
     @media (max-width: 600px) { .dutch-person .dp-amount { width: 96px; } }
+    /* 사다리 타기 */
+    .ladder-chip-list { list-style:none; margin:12px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:8px; }
+    .ladder-chip { display:inline-flex; align-items:center; gap:7px; background:#fff0e7; border:1px solid #f4c6ac;
+      border-radius:99px; padding:7px 12px; font-size:14px; font-weight:700; color:#c95226; animation:rise .2s ease both; }
+    .ladder-chip .lc-dot { width:12px; height:12px; border-radius:50%; }
+    .ladder-chip .lc-x { border:0; background:transparent; color:#c95226; cursor:pointer; font-size:17px; line-height:1; padding:0 2px; }
+    .ladder-result-inputs { list-style:none; margin:10px 0 0; padding:0; display:grid; gap:8px; }
+    .ladder-result-inputs li { display:flex; align-items:center; gap:10px; }
+    .ladder-result-inputs .lr-idx { width:26px; height:26px; flex:none; display:grid; place-items:center;
+      background:#f7f2eb; border-radius:8px; font-size:13px; font-weight:800; color:#756b60; }
+    .ladder-result-inputs input { flex:1; border:1px solid #e9dfd3; background:#fff; padding:10px 11px;
+      border-radius:10px; font:inherit; font-size:14px; outline-color:#f2a17b; }
+    .ladder-canvas-wrap { width:100%; max-width:560px; margin:0 auto; }
+    #ladderCanvas { display:block; width:100%; height:auto; background:#fffaf5; border:1px solid var(--line); border-radius:14px; }
+    .ladder-labels { display:flex; max-width:560px; margin:0 auto; }
+    .ladder-labels .ll-cell { flex:1; text-align:center; font-size:13px; font-weight:800; min-width:0; padding:0 2px; }
+    .ladder-top .ll-cell { color:#29251f; margin-bottom:6px; }
+    .ladder-top .ll-cell button { width:100%; border:1px solid var(--line); background:#fff; border-radius:10px;
+      padding:8px 4px; font:inherit; font-weight:800; font-size:13px; cursor:pointer; color:#29251f;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:.15s; }
+    .ladder-top .ll-cell button:hover:not(:disabled) { background:#fff0e7; border-color:#f4a47e; }
+    .ladder-top .ll-cell button:disabled { opacity:.5; cursor:default; }
+    .ladder-bottom .ll-cell { color:#537b5b; margin-top:6px; overflow-wrap:break-word; }
+    .ladder-bottom .ll-cell.revealed { color:#c95226; font-weight:900; }
+    @media (max-width:600px){ .ladder-labels .ll-cell, .ladder-top .ll-cell button { font-size:11px; } }
     .eyebrow { display: inline-block; padding: 7px 13px; border-radius: 99px; background: #fff0e5; color: var(--orange-dark); font-size: 12px; font-weight: 800; letter-spacing: .08em; }
     h1 { font-size: clamp(34px, 7vw, 58px); line-height: 1.12; margin: 16px 0 10px; letter-spacing: -.06em; }
     h1 span { color: var(--orange); }
@@ -208,6 +233,7 @@
       <button class="tab-btn active" id="tabRecommend" role="tab" aria-selected="true" aria-controls="colRecommend" type="button">🍽️ 메뉴 추천</button>
       <button class="tab-btn" id="tabBoard" role="tab" aria-selected="false" aria-controls="colBoard" type="button">👍 추천 맛집</button>
       <button class="tab-btn" id="tabDutch" role="tab" aria-selected="false" aria-controls="colDutch" type="button">💰 더치페이</button>
+      <button class="tab-btn" id="tabLadder" role="tab" aria-selected="false" aria-controls="colLadder" type="button">🪜 사다리타기</button>
     </div>
 
     <div class="layout">
@@ -379,7 +405,8 @@
       <div class="filters" style="grid-template-columns:1fr 1fr;">
         <div class="filter-box">
           <label for="dutchTotal">💳 총 결제 금액 (원)</label>
-          <input type="number" id="dutchTotal" class="saved-input" min="0" step="100" inputmode="numeric" placeholder="예: 48000">
+          <input type="text" id="dutchTotal" class="saved-input" inputmode="numeric" placeholder="예: 48,000">
+          <p class="hint" id="dutchTotalHint" style="margin-top:8px;"></p>
         </div>
         <div class="filter-box">
           <label for="dutchCount">👥 인원수</label>
@@ -412,6 +439,63 @@
       </section>
     </section>
     </div><!-- /.col-dutch -->
+
+    <div class="col col-ladder" id="colLadder" role="tabpanel" aria-labelledby="tabLadder" hidden>
+    <section class="panel" aria-label="사다리 타기">
+      <h2 class="section-title">🪜 사다리 타기</h2>
+      <p class="finder-desc" style="margin-bottom:18px;">참가자와 결과를 정하고 출발하면, 사다리를 타고 내려가 누가 뭘 맡을지 정해져요. 벌칙·밥값·순서 정하기에 딱!</p>
+
+      <div class="ladder-setup" id="ladderSetup">
+        <div class="pb-field" style="margin-bottom:16px;">
+          <label class="pb-label" style="color:#655d53;">👥 참가자 (2~10명)</label>
+          <div class="pb-add-row">
+            <input type="text" id="ladderNameInput" class="saved-input" maxlength="12" placeholder="이름 입력 후 추가 (예: 철수)">
+            <button type="button" id="ladderAddBtn" class="saved-add-btn" style="flex:none;">＋ 추가</button>
+          </div>
+          <ul id="ladderPlayerList" class="ladder-chip-list"></ul>
+        </div>
+
+        <div class="pb-field" style="margin-bottom:16px;">
+          <label class="pb-label" style="color:#655d53;">🎯 결과 (참가자 수와 같아야 해요)</label>
+          <p class="finder-desc" id="ladderResultHint">각 칸에 결과를 적어요. 비우면 "꽝"으로 채워져요. (예: 밥값, 커피, 당첨, 꽝)</p>
+          <ul id="ladderResultList" class="ladder-result-inputs"></ul>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+            <button type="button" id="ladderFillBob" class="small-btn">🍚 밥값내기로 채우기</button>
+            <button type="button" id="ladderClearResults" class="small-btn">결과 비우기</button>
+          </div>
+        </div>
+
+        <p class="finder-status" id="ladderStatus" style="color:#c0453a;"></p>
+        <div class="actions">
+          <button type="button" id="ladderStartBtn" class="recommend">🪜 사다리 타기 시작</button>
+          <button type="button" id="ladderResetBtn" class="reset">초기화</button>
+        </div>
+      </div>
+
+      <div class="ladder-play" id="ladderPlay" hidden>
+        <div class="ladder-labels ladder-top" id="ladderTopLabels"></div>
+        <div class="ladder-canvas-wrap">
+          <canvas id="ladderCanvas"></canvas>
+        </div>
+        <div class="ladder-labels ladder-bottom" id="ladderBottomLabels"></div>
+
+        <div class="actions" style="margin-top:16px;">
+          <button type="button" id="ladderRevealAll" class="recommend">👀 전체 결과 보기</button>
+          <button type="button" id="ladderRetryBtn" class="reset">다시 (새 사다리)</button>
+        </div>
+        <button type="button" id="ladderBackBtn" class="small-btn" style="width:100%; margin-top:10px;">⬅ 설정으로 돌아가기</button>
+
+        <section class="panel result" id="ladderResult" aria-live="polite" style="margin-top:20px; box-shadow:none; border:1px solid var(--line);">
+          <div class="result-label">사다리 결과</div>
+          <ul class="fav-list" id="ladderResultBreakdown" style="margin-top:10px;"></ul>
+          <div class="result-actions" style="margin-top:14px;">
+            <button type="button" id="ladderCopyBtn" class="small-btn">📋 결과 공유 문구 복사</button>
+          </div>
+          <p class="finder-status" id="ladderCopyStatus"></p>
+        </section>
+      </div>
+    </section>
+    </div><!-- /.col-ladder -->
     </div><!-- /.layout -->
 
     <footer>오늘의 한 끼가 작은 행복이 되길 바랍니다 ♡</footer>
@@ -1419,7 +1503,8 @@
     const TABS = [
       { tab: "tabRecommend", col: "colRecommend" },
       { tab: "tabBoard", col: "colBoard" },
-      { tab: "tabDutch", col: "colDutch" }
+      { tab: "tabDutch", col: "colDutch" },
+      { tab: "tabLadder", col: "colLadder" }
     ];
     function switchTab(which) {
       TABS.forEach(t => {
@@ -1433,6 +1518,7 @@
     document.getElementById("tabRecommend").addEventListener("click", () => switchTab("tabRecommend"));
     document.getElementById("tabBoard").addEventListener("click", () => switchTab("tabBoard"));
     document.getElementById("tabDutch").addEventListener("click", () => switchTab("tabDutch"));
+    document.getElementById("tabLadder").addEventListener("click", () => switchTab("tabLadder"));
 
     // ===== 더치페이 계산 (저장 없음, 100원 단위, 잔돈은 결제자 흡수) =====
     const dutchCountEl = document.getElementById("dutchCount");
@@ -1528,7 +1614,7 @@
     function floor100(n) { return Math.floor(n / 100) * 100; }
 
     function calcDutch() {
-      const total = Math.floor(Number(dutchTotalEl.value));
+      const total = Math.floor(Number(dutchTotalEl.value.replace(/[^\d]/g, "")));
       if (!Number.isFinite(total) || total <= 0) {
         setDutchStatus("총 결제 금액을 올바르게 입력해주세요.", true);
         return;
@@ -1629,10 +1715,35 @@
     }
 
     const dutchTotalEl = document.getElementById("dutchTotal");
+
+    // 숫자를 "만/억" 단위 한글로 읽어준다. 예: 100000→"10만원", 10000000→"1000만원", 123456→"12만 3456원"
+    function koreanMoney(n) {
+      if (!Number.isFinite(n) || n <= 0) return "";
+      const eok = Math.floor(n / 100000000);           // 억
+      const man = Math.floor((n % 100000000) / 10000);  // 만
+      const rest = n % 10000;                           // 나머지(원)
+      const parts = [];
+      if (eok > 0) parts.push(eok + "억");
+      if (man > 0) parts.push(man + "만");
+      if (rest > 0) parts.push(rest.toLocaleString("ko-KR"));
+      return parts.join(" ") + "원";
+    }
+    // 총액 입력 시: 입력칸에 천단위 콤마 적용 + 아래에 금액 안내(1원 이상, 백·십·일 단위도 표시)
+    function updateDutchTotalHint() {
+      const digits = dutchTotalEl.value.replace(/[^\d]/g, "");
+      // 입력칸에 콤마 다시 넣기 (커서는 끝으로 가지만 숫자 입력엔 지장 없음)
+      dutchTotalEl.value = digits ? parseInt(digits, 10).toLocaleString("ko-KR") : "";
+      const n = digits ? parseInt(digits, 10) : 0;
+      const hint = document.getElementById("dutchTotalHint");
+      hint.textContent = (n >= 1) ? koreanMoney(n) : "";
+    }
+    dutchTotalEl.addEventListener("input", updateDutchTotalHint);
+
     dutchCountEl.addEventListener("input", renderDutchPeople);
     document.getElementById("dutchCalc").addEventListener("click", calcDutch);
     document.getElementById("dutchReset").addEventListener("click", () => {
       dutchTotalEl.value = "";
+      document.getElementById("dutchTotalHint").textContent = "";
       dutchCountEl.value = "3";
       renderDutchPeople();
       dutchResultEl.classList.remove("show");
@@ -1658,6 +1769,311 @@
     renderFavorites();
     renderMyRestaurants();
     loadSavedRestaurants();
+
+    // ========================================================================
+    // 🪜 사다리 타기 (독립 모듈 — 저장/서버 없음, Canvas + 바닐라 JS)
+    // ========================================================================
+    (function LadderGame() {
+      "use strict";
+      const $ = id => document.getElementById(id);
+      const el = {
+        setup:$("ladderSetup"), play:$("ladderPlay"),
+        nameInput:$("ladderNameInput"), addBtn:$("ladderAddBtn"), list:$("ladderPlayerList"),
+        resultList:$("ladderResultList"), resultHint:$("ladderResultHint"),
+        fillBob:$("ladderFillBob"), clearResults:$("ladderClearResults"),
+        status:$("ladderStatus"), startBtn:$("ladderStartBtn"), resetBtn:$("ladderResetBtn"),
+        topLabels:$("ladderTopLabels"), bottomLabels:$("ladderBottomLabels"),
+        canvas:$("ladderCanvas"), revealAll:$("ladderRevealAll"), retryBtn:$("ladderRetryBtn"),
+        backBtn:$("ladderBackBtn"), result:$("ladderResult"), breakdown:$("ladderResultBreakdown"),
+        copyBtn:$("ladderCopyBtn"), copyStatus:$("ladderCopyStatus")
+      };
+      if (!el.setup) return;
+
+      const MIN=2, MAX=10;
+      const COLORS=["#ff3b5c","#2f8bff","#e0a400","#3ad16b","#b05cff","#ff8a3d","#19c2c2","#e456b0","#7bb80f","#8894a6"];
+      let players=[];             // 이름 배열
+      let results=[];             // 결과 입력값 배열(참가자 수 만큼)
+
+      // 사다리 상태
+      let cols=0, rungs=[], mapping=[], revealed=new Set();
+      let ctx=null, Wc=560, Hc=420, dpr=1, padX=0, topY=40, botY=380, colGap=0;
+      let animating=false;
+
+      // ---------- 설정 화면 ----------
+      function renderPlayers() {
+        el.list.textContent="";
+        players.forEach((name,i)=>{
+          const li=document.createElement("li"); li.className="ladder-chip";
+          const dot=document.createElement("span"); dot.className="lc-dot"; dot.style.background=COLORS[i];
+          const t=document.createElement("span"); t.textContent=name;
+          const x=document.createElement("button"); x.className="lc-x"; x.type="button"; x.textContent="×";
+          x.setAttribute("aria-label", name+" 삭제");
+          x.addEventListener("click",()=>{ players.splice(i,1); syncResultsLength(); renderPlayers(); renderResultInputs(); });
+          li.appendChild(dot); li.appendChild(t); li.appendChild(x); el.list.appendChild(li);
+        });
+        syncResultsLength();
+        updateStatus();
+      }
+      function addPlayer() {
+        const n=el.nameInput.value.trim();
+        if(!n){ el.status.textContent="이름을 입력해주세요."; return; }
+        if(players.length>=MAX){ el.status.textContent=`최대 ${MAX}명이에요.`; return; }
+        players.push(n); el.nameInput.value="";
+        renderPlayers(); renderResultInputs(); el.nameInput.focus();
+      }
+      function syncResultsLength(){
+        while(results.length<players.length) results.push("");
+        results.length=players.length;
+      }
+      function renderResultInputs() {
+        el.resultList.textContent="";
+        players.forEach((_,i)=>{
+          const li=document.createElement("li");
+          const idx=document.createElement("span"); idx.className="lr-idx"; idx.textContent=String(i+1);
+          const inp=document.createElement("input"); inp.type="text"; inp.maxLength=16;
+          inp.placeholder=`결과 ${i+1} (비우면 꽝)`; inp.value=results[i]||"";
+          inp.addEventListener("input",()=>{ results[i]=inp.value; });
+          li.appendChild(idx); li.appendChild(inp); el.resultList.appendChild(li);
+        });
+      }
+      function updateStatus(){
+        el.status.textContent = players.length<MIN ? `최소 ${MIN}명이 필요해요. (현재 ${players.length}명)` : "";
+        el.startBtn.disabled = players.length<MIN;
+      }
+      el.addBtn.addEventListener("click", addPlayer);
+      el.nameInput.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();addPlayer();} });
+      el.fillBob.addEventListener("click",()=>{
+        syncResultsLength();
+        // 한 명만 "밥값", 나머지 "꽝"
+        const win=Math.floor(Math.random()*players.length);
+        results=players.map((_,i)=> i===win ? "밥값 쏘기 🍚" : "통과 😌");
+        renderResultInputs();
+      });
+      el.clearResults.addEventListener("click",()=>{ results=players.map(()=> ""); renderResultInputs(); });
+
+      // 기본 2명 시드
+      players=["철수","영희"]; results=["",""];
+      renderPlayers(); renderResultInputs();
+
+      // ---------- 사다리 생성 ----------
+      function buildLadder() {
+        cols=players.length;
+        const rows=Math.max(cols*2+2, 8); // 가로줄 후보 행 수
+        rungs=[]; // {row, col} = col과 col+1 사이 가로줄
+        const used={}; // row별 사용된 col 기록(인접 중복 금지)
+        const rungCount=Math.max(cols, Math.round(cols*rows*0.28));
+        let tries=0;
+        while(rungs.length<rungCount && tries<rungCount*20){
+          tries++;
+          const row=1+Math.floor(Math.random()*(rows-1));
+          const col=Math.floor(Math.random()*(cols-1));
+          const key=row+"_"+col, kl=row+"_"+(col-1), kr=row+"_"+(col+1);
+          if(used[key]||used[kl]||used[kr]) continue; // 같은 행에서 인접 가로줄 금지
+          used[key]=true; rungs.push({row,col,rows});
+        }
+        // 매핑 계산: 각 출발열 → 도착열
+        mapping=[];
+        for(let start=0;start<cols;start++){
+          let c=start;
+          for(let row=1;row<rows;row++){
+            // 이 행에서 c-1~c 사이 또는 c~c+1 사이 가로줄?
+            if(rungs.some(r=>r.row===row && r.col===c)) c=c+1;
+            else if(rungs.some(r=>r.row===row && r.col===c-1)) c=c-1;
+          }
+          mapping[start]=c;
+        }
+        revealed=new Set();
+        rungs._rows=rows;
+      }
+
+      function sizeCanvas() {
+        const wrap=el.canvas.parentElement;
+        const cssW=Math.min(wrap.clientWidth||520, 560);
+        const cssH=Math.max(320, Math.min(460, cols*70+120));
+        dpr=window.devicePixelRatio||1;
+        Wc=cssW; Hc=cssH;
+        el.canvas.style.width=cssW+"px"; el.canvas.style.height=cssH+"px";
+        el.canvas.width=Math.round(cssW*dpr); el.canvas.height=Math.round(cssH*dpr);
+        ctx=el.canvas.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+        padX=Math.max(28, cssW/(cols*2));
+        colGap=(cssW-padX*2)/(cols-1);
+        topY=36; botY=cssH-40;
+      }
+      function colX(c){ return padX + c*colGap; }
+      function rowY(row){ const rows=rungs._rows; return topY + (botY-topY)*(row/rows); }
+
+      function drawBase() {
+        ctx.clearRect(0,0,Wc,Hc);
+        // 세로줄
+        ctx.lineWidth=3; ctx.strokeStyle="#d9cbb8";
+        for(let c=0;c<cols;c++){ ctx.beginPath(); ctx.moveTo(colX(c),topY); ctx.lineTo(colX(c),botY); ctx.stroke(); }
+        // 가로줄
+        ctx.strokeStyle="#c3a98a";
+        rungs.forEach(r=>{ const y=rowY(r.row); ctx.beginPath(); ctx.moveTo(colX(r.col),y); ctx.lineTo(colX(r.col+1),y); ctx.stroke(); });
+        // 상/하 점
+        for(let c=0;c<cols;c++){
+          ctx.fillStyle=COLORS[c]; ctx.beginPath(); ctx.arc(colX(c),topY,6,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle="#9c8f7e"; ctx.beginPath(); ctx.arc(colX(c),botY,5,0,Math.PI*2); ctx.fill();
+        }
+      }
+
+      // 경로 좌표 계산 (start열에서 내려가는 꺾은선)
+      function pathPoints(start){
+        const rows=rungs._rows; const pts=[{x:colX(start),y:topY}]; let c=start;
+        for(let row=1;row<rows;row++){
+          const y=rowY(row);
+          if(rungs.some(r=>r.row===row && r.col===c)){ pts.push({x:colX(c),y}); c=c+1; pts.push({x:colX(c),y}); }
+          else if(rungs.some(r=>r.row===row && r.col===c-1)){ pts.push({x:colX(c),y}); c=c-1; pts.push({x:colX(c),y}); }
+        }
+        pts.push({x:colX(c),y:botY});
+        return pts;
+      }
+
+      function drawTracedPaths() {
+        // 이미 공개된 경로들을 다시 그림
+        revealed.forEach(start=>{
+          const pts=pathPoints(start);
+          ctx.lineWidth=4; ctx.strokeStyle=COLORS[start]; ctx.globalAlpha=0.9;
+          ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+          for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+          ctx.stroke(); ctx.globalAlpha=1;
+        });
+      }
+
+      function animatePath(start, done) {
+        if(animating) return;
+        animating=true;
+        const pts=pathPoints(start);
+        // 선분 누적 길이
+        let seg=0, t=0;
+        const color=COLORS[start];
+        function frame(){
+          drawBase(); drawTracedPaths();
+          // 현재 진행중 경로
+          ctx.lineWidth=4; ctx.strokeStyle=color;
+          ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+          for(let i=1;i<=seg;i++) ctx.lineTo(pts[i].x,pts[i].y);
+          // 부분 선분
+          const a=pts[seg], b=pts[seg+1];
+          let hx=a.x, hy=a.y;
+          if(b){ hx=a.x+(b.x-a.x)*t; hy=a.y+(b.y-a.y)*t; ctx.lineTo(hx,hy); }
+          ctx.stroke();
+          // 움직이는 공
+          ctx.fillStyle=color; ctx.shadowColor=color; ctx.shadowBlur=10;
+          ctx.beginPath(); ctx.arc(hx,hy,8,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+
+          if(b){ t+=0.18; if(t>=1){ t=0; seg++; } requestAnimationFrame(frame); }
+          else {
+            animating=false;
+            revealed.add(start);
+            revealResult(start);
+            drawBase(); drawTracedPaths();
+          }
+        }
+        frame();
+      }
+
+      // ---------- 라벨 ----------
+      function renderLabels() {
+        el.topLabels.textContent=""; el.bottomLabels.textContent="";
+        players.forEach((name,i)=>{
+          const cell=document.createElement("div"); cell.className="ll-cell";
+          const btn=document.createElement("button"); btn.type="button"; btn.textContent=name;
+          btn.style.color=COLORS[i];
+          btn.addEventListener("click",()=>{ if(!animating && !revealed.has(i)) animatePath(i); });
+          cell.appendChild(btn); el.topLabels.appendChild(cell);
+        });
+        players.forEach((_,i)=>{
+          const cell=document.createElement("div"); cell.className="ll-cell"; cell.id="lbot-"+i;
+          cell.textContent="?";
+          el.bottomLabels.appendChild(cell);
+        });
+      }
+      function resultText(i){ return (results[i]&&results[i].trim()) ? results[i].trim() : "꽝"; }
+      function revealResult(start){
+        const dest=mapping[start];
+        const cell=document.getElementById("lbot-"+dest);
+        if(cell){ cell.textContent=resultText(dest); cell.classList.add("revealed"); }
+        // 상단 버튼 비활성
+        const btn=el.topLabels.children[start]?.querySelector("button");
+        if(btn) btn.disabled=true;
+        renderBreakdown();
+      }
+      function renderBreakdown(){
+        if(revealed.size===0){ el.result.classList.remove("show"); return; }
+        el.result.classList.add("show");
+        el.breakdown.textContent="";
+        [...revealed].sort((a,b)=>a-b).forEach(start=>{
+          const li=document.createElement("li"); li.className="fav-item";
+          const dot=document.createElement("div"); dot.className="fav-emoji";
+          dot.style.background=COLORS[start]; dot.style.color="#fff"; dot.textContent="🪜";
+          const body=document.createElement("div"); body.className="fav-body";
+          const nm=document.createElement("div"); nm.className="fav-name"; nm.textContent=`${players[start]} → ${resultText(mapping[start])}`;
+          body.appendChild(nm); li.appendChild(dot); li.appendChild(body); el.breakdown.appendChild(li);
+        });
+      }
+
+      // ---------- 시작/제어 ----------
+      function validate(){
+        if(players.length<MIN){ el.status.textContent=`최소 ${MIN}명이 필요해요.`; return false; }
+        if(players.length>MAX){ el.status.textContent=`최대 ${MAX}명이에요.`; return false; }
+        return true;
+      }
+      function start(){
+        if(!validate()) return;
+        syncResultsLength();
+        buildLadder();
+        el.setup.hidden=true; el.play.hidden=false;
+        el.result.classList.remove("show"); el.copyStatus.textContent="";
+        renderLabels();
+        sizeCanvas(); drawBase();
+      }
+      function retry(){ // 새 사다리 (같은 참가자/결과)
+        buildLadder(); renderLabels(); sizeCanvas(); drawBase();
+        el.result.classList.remove("show"); el.copyStatus.textContent="";
+      }
+      function revealAllPaths(){
+        if(animating) return;
+        players.forEach((_,i)=>revealed.add(i));
+        drawBase(); drawTracedPaths();
+        players.forEach((_,i)=>revealResult(i));
+      }
+      function backToSetup(){
+        el.play.hidden=true; el.setup.hidden=false;
+        revealed=new Set();
+      }
+      function resetAll(){
+        players=["철수","영희"]; results=["",""];
+        renderPlayers(); renderResultInputs();
+        el.status.textContent="";
+      }
+      function buildShareText(){
+        const lines=[...revealed].sort((a,b)=>a-b).map(s=>`- ${players[s]} → ${resultText(mapping[s])}`);
+        return `🪜 사다리 타기 결과\n${lines.join("\n")}`;
+      }
+
+      el.startBtn.addEventListener("click", start);
+      el.resetBtn.addEventListener("click", resetAll);
+      el.retryBtn.addEventListener("click", retry);
+      el.revealAll.addEventListener("click", revealAllPaths);
+      el.backBtn.addEventListener("click", backToSetup);
+      el.copyBtn.addEventListener("click", async ()=>{
+        if(revealed.size===0){ el.copyStatus.textContent="먼저 사다리를 타주세요."; return; }
+        const text=buildShareText();
+        try{ await navigator.clipboard.writeText(text); el.copyStatus.textContent="결과를 복사했어요!"; }
+        catch(e){ const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
+          try{ document.execCommand("copy"); el.copyStatus.textContent="결과를 복사했어요!"; }
+          catch{ el.copyStatus.textContent="복사 실패 — 직접 복사해주세요."; }
+          document.body.removeChild(ta); }
+      });
+
+      // 리사이즈 시 사다리 다시 그림 (플레이 중일 때만)
+      let rzT=null;
+      window.addEventListener("resize",()=>{
+        clearTimeout(rzT);
+        rzT=setTimeout(()=>{ if(!el.play.hidden && cols>0){ sizeCanvas(); drawBase(); drawTracedPaths(); } },200);
+      });
+    })();
   </script>
 </body>
 </html>
