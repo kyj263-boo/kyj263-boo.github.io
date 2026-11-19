@@ -5,7 +5,7 @@
   "description": "오늘 뭐 먹지? - 음식/식당 추천 정적 사이트 (Netlify 배포)",
   "type": "module",
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "scripts": {
     "build": "node scripts/build.mjs"
