@@ -39,6 +39,18 @@
     .layout > .col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
     .layout > .col[hidden] { display: none; }
     .layout .panel { margin-top: 0; }
+    /* 더치페이 사람 행 */
+    .dutch-person { display: flex; align-items: center; gap: 10px; background: #fffaf5; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+    .dutch-person.excluded { opacity: .5; }
+    .dutch-person .dp-check { width: 18px; height: 18px; flex: none; }
+    .dutch-person .dp-name { flex: 1; min-width: 0; border: 1px solid #e9dfd3; background: #fff; padding: 9px 11px; border-radius: 10px; font: inherit; font-size: 14px; }
+    .dutch-person .dp-amount { width: 120px; flex: none; border: 1px solid #e9dfd3; background: #fff; padding: 9px 11px; border-radius: 10px; font: inherit; font-size: 14px; text-align: right; }
+    .dutch-breakdown-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f6faf6; border: 1px solid #e3efe4; border-radius: 12px; padding: 11px 14px; }
+    .dutch-breakdown-item .dbi-name { font-weight: 800; font-size: 15px; }
+    .dutch-breakdown-item .dbi-amount { font-weight: 900; color: var(--green); font-size: 15px; }
+    .dutch-breakdown-item.payer { background: #fff0e7; border-color: #f4a47e; }
+    .dutch-breakdown-item.payer .dbi-amount { color: var(--orange-dark); }
+    @media (max-width: 600px) { .dutch-person .dp-amount { width: 96px; } }
     .eyebrow { display: inline-block; padding: 7px 13px; border-radius: 99px; background: #fff0e5; color: var(--orange-dark); font-size: 12px; font-weight: 800; letter-spacing: .08em; }
     h1 { font-size: clamp(34px, 7vw, 58px); line-height: 1.12; margin: 16px 0 10px; letter-spacing: -.06em; }
     h1 span { color: var(--orange); }
@@ -195,6 +207,7 @@
     <div class="tabs" role="tablist" aria-label="화면 전환">
       <button class="tab-btn active" id="tabRecommend" role="tab" aria-selected="true" aria-controls="colRecommend" type="button">🍽️ 메뉴 추천</button>
       <button class="tab-btn" id="tabBoard" role="tab" aria-selected="false" aria-controls="colBoard" type="button">👍 추천 맛집</button>
+      <button class="tab-btn" id="tabDutch" role="tab" aria-selected="false" aria-controls="colDutch" type="button">💰 더치페이</button>
     </div>
 
     <div class="layout">
@@ -357,6 +370,48 @@
       </div>
     </section>
     </div><!-- /.col-board -->
+
+    <div class="col col-dutch" id="colDutch" role="tabpanel" aria-labelledby="tabDutch" hidden>
+    <section class="panel" aria-label="더치페이 계산">
+      <h2 class="section-title">💰 더치페이 계산</h2>
+      <p class="finder-desc" style="margin-bottom:18px;">총 금액과 인원을 넣으면 1/N로 나눠요. 사람별로 금액을 직접 정하거나, 특정 사람을 제외할 수도 있어요. 결제한 사람을 고르면 누가 누구에게 얼마 보낼지 계산해 드려요. (100원 단위, 잔돈은 결제자가 부담)</p>
+
+      <div class="filters" style="grid-template-columns:1fr 1fr;">
+        <div class="filter-box">
+          <label for="dutchTotal">💳 총 결제 금액 (원)</label>
+          <input type="number" id="dutchTotal" class="saved-input" min="0" step="100" inputmode="numeric" placeholder="예: 48000">
+        </div>
+        <div class="filter-box">
+          <label for="dutchCount">👥 인원수</label>
+          <input type="number" id="dutchCount" class="saved-input" min="1" max="30" step="1" inputmode="numeric" value="3">
+        </div>
+      </div>
+
+      <h3 class="finder-title" style="margin-top:4px;">사람별 설정</h3>
+      <p class="finder-desc">금액을 직접 쓰면 그 금액으로 고정돼요. 비워두면 남은 금액을 똑같이 나눠요. 체크를 끄면 그 사람은 제외돼요.</p>
+      <ul class="restaurant-list" id="dutchPeople" style="margin-top:8px;"></ul>
+
+      <div class="filter-box" style="margin-top:16px;">
+        <label for="dutchPayer">🙋 먼저 결제한 사람 (정산 기준)</label>
+        <select id="dutchPayer" class="saved-input"></select>
+      </div>
+
+      <div class="actions" style="margin-top:18px;">
+        <button class="recommend" id="dutchCalc" type="button">✨ 정산 계산하기</button>
+        <button class="reset" id="dutchReset" type="button">초기화</button>
+      </div>
+
+      <section class="panel result" id="dutchResult" aria-live="polite" style="margin-top:22px; box-shadow:none; border:1px solid var(--line);">
+        <div class="result-label">정산 결과</div>
+        <h3 class="finder-title" id="dutchSummary" style="margin:8px 0 12px;"></h3>
+        <ul class="restaurant-list" id="dutchBreakdown"></ul>
+        <div class="result-actions" style="margin-top:16px;">
+          <button class="small-btn" id="dutchCopy" type="button">📋 카카오톡 공유 문구 복사</button>
+        </div>
+        <p class="finder-status" id="dutchCopyStatus"></p>
+      </section>
+    </section>
+    </div><!-- /.col-dutch -->
     </div><!-- /.layout -->
 
     <footer>오늘의 한 끼가 작은 행복이 되길 바랍니다 ♡</footer>
@@ -1361,19 +1416,243 @@
     });
 
     // ===== 상단 탭 전환 (메뉴 추천 / 추천 맛집) =====
+    const TABS = [
+      { tab: "tabRecommend", col: "colRecommend" },
+      { tab: "tabBoard", col: "colBoard" },
+      { tab: "tabDutch", col: "colDutch" }
+    ];
     function switchTab(which) {
-      const isRecommend = which === "recommend";
-      document.getElementById("colRecommend").hidden = !isRecommend;
-      document.getElementById("colBoard").hidden = isRecommend;
-      const tabR = document.getElementById("tabRecommend");
-      const tabB = document.getElementById("tabBoard");
-      tabR.classList.toggle("active", isRecommend);
-      tabB.classList.toggle("active", !isRecommend);
-      tabR.setAttribute("aria-selected", String(isRecommend));
-      tabB.setAttribute("aria-selected", String(!isRecommend));
+      TABS.forEach(t => {
+        const active = t.tab === which;
+        document.getElementById(t.col).hidden = !active;
+        const btn = document.getElementById(t.tab);
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-selected", String(active));
+      });
     }
-    document.getElementById("tabRecommend").addEventListener("click", () => switchTab("recommend"));
-    document.getElementById("tabBoard").addEventListener("click", () => switchTab("board"));
+    document.getElementById("tabRecommend").addEventListener("click", () => switchTab("tabRecommend"));
+    document.getElementById("tabBoard").addEventListener("click", () => switchTab("tabBoard"));
+    document.getElementById("tabDutch").addEventListener("click", () => switchTab("tabDutch"));
+
+    // ===== 더치페이 계산 (저장 없음, 100원 단위, 잔돈은 결제자 흡수) =====
+    const dutchCountEl = document.getElementById("dutchCount");
+    const dutchPeopleEl = document.getElementById("dutchPeople");
+    const dutchPayerEl = document.getElementById("dutchPayer");
+    const dutchResultEl = document.getElementById("dutchResult");
+
+    // 인원수에 맞춰 사람 입력 행을 그린다 (기존 입력값은 최대한 유지)
+    function renderDutchPeople() {
+      let n = parseInt(dutchCountEl.value, 10);
+      if (!Number.isInteger(n) || n < 1) n = 1;
+      if (n > 30) n = 30;
+      // 기존 값 백업
+      const prev = [];
+      dutchPeopleEl.querySelectorAll(".dutch-person").forEach(row => {
+        prev.push({
+          name: row.querySelector(".dp-name").value,
+          amount: row.querySelector(".dp-amount").value,
+          included: row.querySelector(".dp-check").checked
+        });
+      });
+      dutchPeopleEl.textContent = "";
+      for (let i = 0; i < n; i++) {
+        const row = document.createElement("li");
+        row.className = "dutch-person";
+
+        const check = document.createElement("input");
+        check.type = "checkbox"; check.className = "dp-check"; check.checked = prev[i] ? prev[i].included : true;
+        check.title = "정산 포함/제외";
+
+        const name = document.createElement("input");
+        name.type = "text"; name.className = "dp-name"; name.maxLength = 20;
+        name.placeholder = `사람 ${i + 1}`;
+        name.value = prev[i] ? prev[i].name : "";
+
+        const amount = document.createElement("input");
+        amount.type = "number"; amount.className = "dp-amount"; amount.min = "0"; amount.step = "100";
+        amount.inputMode = "numeric"; amount.placeholder = "자동(1/N)";
+        amount.value = prev[i] ? prev[i].amount : "";
+
+        check.addEventListener("change", () => {
+          row.classList.toggle("excluded", !check.checked);
+          amount.disabled = !check.checked;
+          refreshPayerOptions();
+        });
+        name.addEventListener("input", refreshPayerOptions);
+        row.classList.toggle("excluded", !check.checked);
+        amount.disabled = !check.checked;
+
+        row.appendChild(check);
+        row.appendChild(name);
+        row.appendChild(amount);
+        dutchPeopleEl.appendChild(row);
+      }
+      refreshPayerOptions();
+    }
+
+    // 포함된 사람들로 결제자 드롭다운을 갱신
+    function refreshPayerOptions() {
+      const people = getDutchPeople();
+      const prev = dutchPayerEl.value;
+      dutchPayerEl.textContent = "";
+      const none = document.createElement("option");
+      none.value = ""; none.textContent = "선택 안 함 (송금 안내 없이 분담만)";
+      dutchPayerEl.appendChild(none);
+      people.forEach(p => {
+        if (!p.included) return;
+        const opt = document.createElement("option");
+        opt.value = String(p.index); opt.textContent = p.name;
+        dutchPayerEl.appendChild(opt);
+      });
+      // 이전 선택 유지
+      if ([...dutchPayerEl.options].some(o => o.value === prev)) dutchPayerEl.value = prev;
+    }
+
+    // 현재 사람 입력 상태를 배열로
+    function getDutchPeople() {
+      const rows = [...dutchPeopleEl.querySelectorAll(".dutch-person")];
+      return rows.map((row, i) => {
+        const nameVal = row.querySelector(".dp-name").value.trim();
+        const amtRaw = row.querySelector(".dp-amount").value;
+        const amt = amtRaw === "" ? null : Math.max(0, Math.floor(Number(amtRaw)));
+        return {
+          index: i,
+          name: nameVal || `사람 ${i + 1}`,
+          included: row.querySelector(".dp-check").checked,
+          fixed: (amtRaw !== "" && Number.isFinite(amt)) ? amt : null
+        };
+      });
+    }
+
+    // 100원 단위 내림
+    function floor100(n) { return Math.floor(n / 100) * 100; }
+
+    function calcDutch() {
+      const total = Math.floor(Number(dutchTotalEl.value));
+      if (!Number.isFinite(total) || total <= 0) {
+        setDutchStatus("총 결제 금액을 올바르게 입력해주세요.", true);
+        return;
+      }
+      const people = getDutchPeople();
+      const included = people.filter(p => p.included);
+      if (included.length === 0) {
+        setDutchStatus("정산에 포함된 사람이 없어요.", true);
+        return;
+      }
+
+      // 고정액(직접 입력)과 자동(균등) 분리
+      const fixedPeople = included.filter(p => p.fixed != null);
+      const autoPeople = included.filter(p => p.fixed == null);
+      const fixedSum = fixedPeople.reduce((s, p) => s + p.fixed, 0);
+
+      if (fixedSum > total) {
+        setDutchStatus("직접 지정한 금액의 합이 총액보다 커요. 금액을 확인해주세요.", true);
+        return;
+      }
+
+      // 각자 부담액 계산
+      const share = {}; // index -> 금액
+      fixedPeople.forEach(p => { share[p.index] = p.fixed; });
+
+      const remaining = total - fixedSum;
+      if (autoPeople.length > 0) {
+        const per = floor100(remaining / autoPeople.length); // 100원 단위 내림
+        autoPeople.forEach(p => { share[p.index] = per; });
+      }
+
+      // 여기까지의 합과 총액의 차이(잔돈) = 결제자(없으면 첫 포함자)가 흡수
+      let assigned = included.reduce((s, p) => s + (share[p.index] || 0), 0);
+      let remainder = total - assigned;
+
+      const payerIdx = dutchPayerEl.value === "" ? null : parseInt(dutchPayerEl.value, 10);
+      // 잔돈을 흡수할 사람: 결제자 우선, 없으면 자동분배 첫 사람, 그것도 없으면 포함 첫 사람
+      let absorber = null;
+      if (payerIdx != null && included.some(p => p.index === payerIdx)) absorber = payerIdx;
+      else if (autoPeople.length > 0) absorber = autoPeople[0].index;
+      else absorber = included[0].index;
+      share[absorber] = (share[absorber] || 0) + remainder;
+
+      // 정산(송금) 안내: 결제자가 있으면 나머지가 결제자에게 자기 몫 송금
+      renderDutchResult({ total, included, share, payerIdx });
+      setDutchStatus("");
+    }
+
+    function renderDutchResult(data) {
+      const { total, included, share, payerIdx } = data;
+      const won = n => n.toLocaleString("ko-KR") + "원";
+      const payer = (payerIdx != null) ? included.find(p => p.index === payerIdx) : null;
+
+      document.getElementById("dutchSummary").textContent =
+        `총 ${won(total)} · ${included.length}명` + (payer ? ` · 결제: ${payer.name}` : "");
+
+      const ul = document.getElementById("dutchBreakdown");
+      ul.textContent = "";
+      included.forEach(p => {
+        const li = document.createElement("li");
+        li.className = "dutch-breakdown-item";
+        const amt = share[p.index] || 0;
+        const nameEl = document.createElement("span");
+        nameEl.className = "dbi-name";
+        const amtEl = document.createElement("span");
+        amtEl.className = "dbi-amount";
+        if (payer && p.index === payer.index) {
+          li.classList.add("payer");
+          nameEl.textContent = `${p.name} (결제함)`;
+          amtEl.textContent = `부담 ${won(amt)}`;
+        } else if (payer) {
+          nameEl.textContent = `${p.name} → ${payer.name}`;
+          amtEl.textContent = `${won(amt)} 보내기`;
+        } else {
+          nameEl.textContent = p.name;
+          amtEl.textContent = won(amt);
+        }
+        li.appendChild(nameEl);
+        li.appendChild(amtEl);
+        ul.appendChild(li);
+      });
+      dutchResultEl.classList.add("show");
+      document.getElementById("dutchCopyStatus").textContent = "";
+    }
+
+    // 카카오톡 공유용 문구 만들기 (클립보드 복사)
+    function buildDutchText() {
+      const summary = document.getElementById("dutchSummary").textContent;
+      const items = [...document.getElementById("dutchBreakdown").querySelectorAll(".dutch-breakdown-item")]
+        .map(li => `- ${li.querySelector(".dbi-name").textContent}: ${li.querySelector(".dbi-amount").textContent}`);
+      return `💰 더치페이 정산\n${summary}\n${items.join("\n")}`;
+    }
+
+    function setDutchStatus(msg, isError) {
+      const el = document.getElementById("dutchCopyStatus");
+      el.textContent = msg || "";
+      el.classList.toggle("error", !!isError);
+    }
+
+    const dutchTotalEl = document.getElementById("dutchTotal");
+    dutchCountEl.addEventListener("input", renderDutchPeople);
+    document.getElementById("dutchCalc").addEventListener("click", calcDutch);
+    document.getElementById("dutchReset").addEventListener("click", () => {
+      dutchTotalEl.value = "";
+      dutchCountEl.value = "3";
+      renderDutchPeople();
+      dutchResultEl.classList.remove("show");
+      setDutchStatus("");
+    });
+    document.getElementById("dutchCopy").addEventListener("click", async () => {
+      const text = buildDutchText();
+      try {
+        await navigator.clipboard.writeText(text);
+        setDutchStatus("공유 문구를 복사했어요! 카카오톡에 붙여넣으세요.");
+      } catch (e) {
+        // 클립보드 권한이 없으면 textarea로 대체 복사
+        const ta = document.createElement("textarea");
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); setDutchStatus("공유 문구를 복사했어요!"); }
+        catch { setDutchStatus("복사에 실패했어요. 문구를 길게 눌러 직접 복사해주세요.", true); }
+        document.body.removeChild(ta);
+      }
+    });
+    renderDutchPeople();
 
     // 초기 렌더링: 마음에 든 메뉴 + 저장한 식당(둘 다 나만 보는 localStorage) + 공유 게시판 목록
     renderFavorites();
