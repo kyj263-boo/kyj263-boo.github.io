@@ -9,7 +9,23 @@
 // 호출: POST /.netlify/functions/update-restaurant
 // body(JSON): { id, password, restaurant_name, menu_name, address, price_range, features, occasion }
 
-import { verifyPassword } from "./_password.mjs";
+import { pbkdf2Sync, timingSafeEqual } from "node:crypto";
+
+// 비밀번호 검증 (PBKDF2-SHA256). import 의존을 없애려 각 함수에 직접 둔다.
+function verifyPassword(password, stored) {
+  if (typeof stored !== "string") return false;
+  const parts = stored.split("$");
+  if (parts.length !== 4 || parts[0] !== "pbkdf2") return false;
+  const iterations = parseInt(parts[1], 10);
+  const saltHex = parts[2];
+  const expected = Buffer.from(parts[3], "hex");
+  if (!Number.isInteger(iterations) || iterations <= 0) return false;
+  let actual;
+  try { actual = pbkdf2Sync(String(password), saltHex, iterations, expected.length, "sha256"); }
+  catch { return false; }
+  if (actual.length !== expected.length) return false;
+  return timingSafeEqual(actual, expected);
+}
 
 const TABLE = "recommended_restaurants";
 

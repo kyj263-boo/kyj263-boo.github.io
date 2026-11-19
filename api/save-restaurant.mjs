@@ -9,7 +9,17 @@
 // 호출: POST /.netlify/functions/save-restaurant
 // body(JSON): { restaurant_name, menu_name, menu_emoji, category, cuisine, address, lat, lon }
 
-import { hashPassword, isValidPassword } from "./_password.mjs";
+import { pbkdf2Sync, randomBytes } from "node:crypto";
+
+// 비밀번호 해시 (PBKDF2-SHA256). import 의존을 없애려 각 함수에 직접 둔다.
+function hashPassword(password) {
+  const saltHex = randomBytes(16).toString("hex");
+  const hash = pbkdf2Sync(String(password), saltHex, 100000, 32, "sha256");
+  return `pbkdf2$100000$${saltHex}$${hash.toString("hex")}`;
+}
+function isValidPassword(password) {
+  return typeof password === "string" && password.length >= 4 && password.length <= 64;
+}
 
 const TABLE = "recommended_restaurants";
 
