@@ -805,7 +805,7 @@
     // 식당 검색은 브라우저에서 직접 호출하지 않고 Netlify 서버 함수(search-restaurants)를 거친다.
     // (카카오 로컬 API는 REST 키가 필요하고 브라우저 직접 호출 시 CORS가 막히므로 서버 경유)
     async function searchRestaurantsViaServer(body) {
-      const res = await fetch("/.netlify/functions/search-restaurants", {
+      const res = await fetch("/api/search-restaurants", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body)
@@ -1176,7 +1176,7 @@
     // 저장은 브라우저에서 직접 insert하지 않고 Netlify 서버 함수(save-restaurant)를 거친다.
     async function postSaveRestaurant(record) {
       try {
-        const res = await fetch("/.netlify/functions/save-restaurant", {
+        const res = await fetch("/api/save-restaurant", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(record)
@@ -1193,7 +1193,7 @@
     // 게시판 삭제 요청 (서버가 비밀번호를 확인)
     async function postDeleteRestaurant(id, password) {
       try {
-        const res = await fetch("/.netlify/functions/delete-restaurant", {
+        const res = await fetch("/api/delete-restaurant", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ id, password })
@@ -1210,7 +1210,7 @@
     // 게시판 수정 요청 (서버가 비밀번호를 확인)
     async function postUpdateRestaurant(fields) {
       try {
-        const res = await fetch("/.netlify/functions/update-restaurant", {
+        const res = await fetch("/api/update-restaurant", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(fields)

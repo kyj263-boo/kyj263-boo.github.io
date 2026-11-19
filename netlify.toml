@@ -14,5 +14,12 @@
 [functions]
   node_bundler = "esbuild"
 
+# 프런트엔드는 Vercel과 호환되도록 /api/* 경로로 함수를 호출한다.
+# Netlify에서도 같은 코드가 동작하도록 /api/* 를 Netlify 함수로 연결한다.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
 # 루트(/) 첫 화면은 빌드 단계에서 public/index.html을 food.html 내용으로 덮어써서 처리한다.
 # (scripts/build.mjs 참고) 따라서 별도 리다이렉트는 두지 않는다.

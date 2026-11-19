@@ -23,9 +23,9 @@ const PUBLIC_EXT = new Set([
 // 절대 공개 폴더에 들어가면 안 되는 최상위 항목 (서버 비밀/개인 기록/빌드 부산물)
 const EXCLUDE_TOP = new Set([
   ".git", ".env", ".kiro", "docs", "node_modules",
-  "netlify", "scripts", "public",
-  ".gitignore", ".netlify",
-  "package.json", "package-lock.json", "netlify.toml"
+  "netlify", "api", "scripts", "public",
+  ".gitignore", ".netlify", ".vercel",
+  "package.json", "package-lock.json", "netlify.toml", "vercel.json"
 ]);
 
 // 추가로 어느 깊이에서든 제외할 파일/폴더
