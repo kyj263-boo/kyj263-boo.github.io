@@ -1200,7 +1200,7 @@
         });
         let body = {};
         try { body = await res.json(); } catch {}
-        if (!res.ok || !body.ok) return { ok: false, error: body.error };
+        if (!res.ok || !body.ok) return { ok: false, error: (body.error || "") + (body.debug ? " [" + body.debug + "]" : "") };
         return { ok: true };
       } catch (e) {
         return { ok: false, error: "삭제 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요." };

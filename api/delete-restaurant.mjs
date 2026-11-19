@@ -48,13 +48,13 @@ export default async function handler(req, res) {
   const payload = readBody(req);
 
   if (typeof payload !== "object" || payload === null) {
-    return res.status(400).json({ ok: false, error: "잘못된 요청입니다." });
+    return res.status(400).json({ ok: false, error: "잘못된 요청입니다.", debug: `bodyType=${typeof req.body}` });
   }
 
   const idNum = Number(payload.id);
   const password = typeof payload.password === "string" ? payload.password : "";
   if (!Number.isInteger(idNum) || idNum <= 0) {
-    return res.status(400).json({ ok: false, error: "잘못된 요청입니다." });
+    return res.status(400).json({ ok: false, error: "잘못된 요청입니다.", debug: `id=${JSON.stringify(payload.id)} bodyType=${typeof req.body} keys=${Object.keys(payload).join(",")}` });
   }
   if (!password) {
     return res.status(400).json({ ok: false, error: "비밀번호를 입력해주세요." });
